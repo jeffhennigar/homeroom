@@ -82,7 +82,7 @@
       Wand2, CameraOff, FlipHorizontal, X, Bold, List, ChevronLeft, ChevronRight,
       Save, AlertCircle, Share2, Edit3, Layout, User, MoreVertical, MoreHorizontal, Briefcase,
       RotateCw, Lock, Unlock, Grip, Palette, Image as ImageIcon, UploadCloud,
-      Sun, Moon, BarChart2, Italic, Underline, AlignLeft, Clock,
+      Sun, Moon, BarChart2, Italic, Underline, AlignLeft, Clock, Smile,
       Volume2, VolumeX, Download, Upload, Check, Info, ExternalLink, Mail, Calendar
     } from 'lucide-react';
 
@@ -125,13 +125,12 @@
     // --- BACKGROUND PRESETS (UPDATED) ---
     const BACKGROUNDS = [
       { id: 'default', name: 'Original', type: 'preset', preview: 'bg-gradient-to-br from-blue-200 to-orange-200', style: {}, textColor: 'text-slate-800' },
-      { id: 'whimsical', name: 'Whimsical', type: 'preset', preview: '', src: 'https://plus.unsplash.com/premium_photo-1747948722627-ddbc400ac06a?fm=jpg&q=80&w=1920&auto=format&fit=crop', textColor: 'text-white' },
-      { id: 'forest', name: 'Forest', type: 'preset', preview: '', src: 'https://images.unsplash.com/photo-1470115636492-6d2b56f9146d?fm=jpg&q=80&w=1920&auto=format&fit=crop', textColor: 'text-white' },
-      { id: 'ocean', name: 'Ocean', type: 'preset', preview: '', src: 'https://plus.unsplash.com/premium_photo-1666286163385-abe05f0326c4?fm=jpg&q=80&w=1920&auto=format&fit=crop', textColor: 'text-white' },
-      { id: 'sunset', name: 'Sunset', type: 'preset', preview: '', src: 'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?fm=jpg&q=80&w=1920&auto=format&fit=crop', textColor: 'text-white' },
-      { id: 'galaxy', name: 'Galaxy', type: 'preset', preview: '', src: 'https://images.unsplash.com/photo-1538370965046-79c0d6907d47?fm=jpg&q=80&w=1920&auto=format&fit=crop', textColor: 'text-white' },
-      { id: 'puppy', name: 'Puppy', type: 'preset', preview: '', src: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&q=80&w=1920', textColor: 'text-white' },
-      { id: 'kitten', name: 'Kitten', type: 'preset', preview: '', src: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=1920', textColor: 'text-white' }, // Landscape Kitten
+      { id: 'forest', name: 'Forest', type: 'preset', preview: '', src: 'https://images.pexels.com/photos/1179229/pexels-photo-1179229.jpeg?auto=compress&cs=tinysrgb&w=1920', textColor: 'text-white' },
+      { id: 'ocean', name: 'Ocean', type: 'preset', preview: '', src: 'https://images.pexels.com/photos/1032650/pexels-photo-1032650.jpeg?auto=compress&cs=tinysrgb&w=1920', textColor: 'text-slate-800' },
+      { id: 'sunset', name: 'Sunset', type: 'preset', preview: '', src: 'https://images.pexels.com/photos/36717/amazing-animal-beautiful-beautifull.jpg?auto=compress&cs=tinysrgb&w=1920', textColor: 'text-white' },
+      { id: 'galaxy', name: 'Galaxy', type: 'preset', preview: '', src: 'https://images.pexels.com/photos/956981/milky-way-starry-sky-night-sky-star-956981.jpeg?auto=compress&cs=tinysrgb&w=1920', textColor: 'text-white' },
+      { id: 'puppy', name: 'Puppy', type: 'preset', preview: '', src: 'https://images.pexels.com/photos/1805164/pexels-photo-1805164.jpeg?auto=compress&cs=tinysrgb&w=1920', textColor: 'text-white' },
+      { id: 'kitten', name: 'Kitten', type: 'preset', preview: '', src: 'https://images.pexels.com/photos/45201/kitty-cat-kitten-pet-45201.jpeg?auto=compress&cs=tinysrgb&w=1920', textColor: 'text-white' },
     ];
 
     // --- STORAGE SERVICE ---
@@ -194,20 +193,6 @@
     };
 
     // --- COMPONENTS ---
-    // (DraggableResizable, TimerWidget, RandomizerWidget, GroupMakerWidget, WebcamWidget are UNCHANGED)
-    // NOTE: In a real scenario I would include them, but here I trust the existing file has them.
-    // Wait, the replace tool needs context. I will rely on existing lines being present or I need to rewrite them if I touch them.
-    // I am NOT touching Timer, Randomizer, GroupMaker, Webcam.
-    // I AM touching TextWidget, DiceWidget.
-    // I AM adding VoteWidget.
-
-    // I must include DraggableResizable definition if it's in the block I'm replacing?
-    // StartLine: 75 closes `script`? No, 75 is imports.
-    // My previous edit replaced up to line 276.
-    // The previous view_file showed logic up to 385.
-    // I will rewrite the CHANGED widgets and the constants block.
-
-    // ... Skip Draggable/Timer/Randomizer/Group/Webcam ...
 
     const TextWidget = ({ widget, updateData }) => {
       const editorRef = useRef(null);
@@ -244,7 +229,7 @@
           <div className="flex-1 relative cursor-text group" onClick={() => editorRef.current?.focus()}>
             <div
               ref={editorRef}
-              className="w-full h-full p-4 outline-none overflow-auto custom-scrollbar text-gray-800"
+              className="w-full h-full p-4 outline-none overflow-auto custom-scrollbar text-gray-800 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
               contentEditable
               suppressContentEditableWarning
               onInput={(e) => updateData(widget.id, { content: e.currentTarget.innerHTML })}
@@ -697,16 +682,40 @@
 
     const GroupMakerWidget = ({ widget, updateData, roster }) => {
       const { groups = [], fontSize = 16, groupCount = 4 } = widget.data;
+      const containerRef = useRef(null);
+      const [columns, setColumns] = useState(4);
 
       const activeStudents = roster.filter(s => s.active);
       const count = activeStudents.length;
       const scaledFS = (fontSize / 16) * 14;
+
+      // Responsive column calculation
+      useEffect(() => {
+        if (!containerRef.current) return;
+        const observer = new ResizeObserver((entries) => {
+          for (let entry of entries) {
+            const width = entry.contentRect.width;
+            // Min column width of 140px
+            const newCols = Math.max(2, Math.min(8, Math.floor(width / 140)));
+            setColumns(newCols);
+          }
+        });
+        observer.observe(containerRef.current);
+        return () => observer.disconnect();
+      }, []);
 
       const createGroups = (countNeeded) => {
         const shuffled = [...activeStudents].sort(() => Math.random() - 0.5);
         const newG = Array.from({ length: countNeeded }, () => []);
         shuffled.forEach((s, i) => newG[i % countNeeded].push(s));
         updateData(widget.id, { groups: newG, groupCount: countNeeded });
+      };
+
+      // Calculate grid template based on dynamic columns
+      const gridStyle = {
+        display: 'grid',
+        gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+        gap: '0.5rem'
       };
 
       return (
@@ -717,9 +726,10 @@
                 <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Present: </span>
                 <span className="text-xs font-bold text-blue-600">{count}</span>
               </div>
+              <div className="text-[10px] text-gray-400">{columns} cols</div>
             </div>
 
-            <div className="grid grid-cols-4 gap-2 overflow-y-auto content-start custom-scrollbar flex-1">
+            <div ref={containerRef} className="overflow-y-auto content-start custom-scrollbar flex-1" style={gridStyle}>
               {groups.length > 0 ? groups.map((g, i) => (
                 <div key={i} className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 min-h-[80px] flex flex-col">
                   <div className="font-bold text-[10px] uppercase text-gray-400 mb-1 tracking-wider">Group {i + 1}</div>
@@ -729,7 +739,7 @@
                     ))}
                   </div>
                 </div>
-              )) : <div className="col-span-4 flex items-center justify-center text-gray-400 italic">No groups created</div>}
+              )) : <div className="col-span-full flex items-center justify-center text-gray-400 italic">No groups created</div>}
             </div>
 
             <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm mt-auto shrink-0">
@@ -783,25 +793,49 @@
     const DRAW_EMOJIS = ['⭐', '❤️', '✅', '❌', '👍', '👎', '🎯', '🏆', '🔥', '💡', '📌', '🎨', '📝', '🌟', '✨', '🎉', '💯', '👀', '🤔', '💪', '🌈', '⚡', '🎁', '😊', '🙌'];
 
     const WhiteboardWidget = ({ widget, updateData }) => {
-      const { lines = [], color = '#000000', size = 5, tool = 'pen', textItems = [], emojiItems = [] } = widget.data;
+      const { lines = [], color = '#000000', size = 5, tool = 'pen', textItems = [], emojiItems = [], imageItems = [] } = widget.data;
       const canvasRef = useRef(null);
       const isDrawing = useRef(false);
       const lastPos = useRef({ x: 0, y: 0 });
       const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-      const [editingTextId, setEditingTextId] = useState(null);
+      // Selection state: { type: 'text'|'emoji'|'image', id: string }
+      const [selectedItem, setSelectedItem] = useState(null);
+      const fileInputRef = useRef(null);
+
+      // Deselect when clicking canvas (unless clicking on an item)
+      const handleCanvasClick = (e) => {
+        // Only deselect if clicking directly on the widget background, not on items
+        if (e.target === e.currentTarget) {
+          setSelectedItem(null);
+        }
+      };
+
+      // Drawing Logic
       useEffect(() => {
         const cvs = canvasRef.current;
         if (!cvs) return;
         const ctx = cvs.getContext('2d');
         const rect = cvs.getBoundingClientRect();
-
         cvs.width = rect.width;
         cvs.height = rect.height;
-
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.clearRect(0, 0, cvs.width, cvs.height);
 
+        // Draw Images (Bottom Layer)
+        imageItems.forEach(img => {
+          const image = new Image();
+          image.src = img.src;
+          if (image.complete) {
+            const w = (img.width || 100) * (img.scale || 1);
+            const h = (img.height || 100) * (img.scale || 1);
+            ctx.drawImage(image, img.x * rect.width - w / 2, img.y * rect.height - h / 2, w, h);
+          } else {
+            image.onload = () => { /* redraw triggered by react update usually */ };
+          }
+        });
+
+        // Draw Lines
         lines.forEach(line => {
           ctx.beginPath();
           ctx.strokeStyle = line.tool === 'eraser' ? '#ffffff' : line.color;
@@ -812,29 +846,15 @@
           }
           ctx.stroke();
         });
-      }, [lines, widget.size, widget.id]);
+      }, [lines, widget.size, widget.id, imageItems]);
 
       const getPos = (e) => {
         const rect = canvasRef.current.getBoundingClientRect();
         return { x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height };
       };
 
-      const start = (e) => {
-        if (tool === 'text') {
-          // Add new text box at click position
-          e.stopPropagation();
-          const rect = canvasRef.current.getBoundingClientRect();
-          const x = (e.clientX - rect.left) / rect.width;
-          const y = (e.clientY - rect.top) / rect.height;
-          const newTextItem = { id: Date.now(), x, y, text: 'Text', color };
-          updateData(widget.id, { textItems: [...textItems, newTextItem] });
-          setEditingTextId(newTextItem.id);
-          return;
-        }
-        if (tool === 'emoji') {
-          setShowEmojiPicker(!showEmojiPicker);
-          return;
-        }
+      const startDrawing = (e) => {
+        if (tool !== 'pen' && tool !== 'eraser') return;
         e.stopPropagation();
         isDrawing.current = true;
         const pos = getPos(e);
@@ -843,7 +863,7 @@
         updateData(widget.id, { lines: [...lines, newLine] });
       };
 
-      const move = (e) => {
+      const moveDrawing = (e) => {
         if (!isDrawing.current) return;
         e.stopPropagation();
         e.preventDefault();
@@ -856,167 +876,332 @@
         lastPos.current = pos;
       };
 
-      const end = () => { isDrawing.current = false; };
+      const stopDrawing = () => { isDrawing.current = false; };
 
-      const addEmoji = (emoji, e) => {
-        e.stopPropagation();
-        const rect = canvasRef.current.getBoundingClientRect();
-        // Place emoji in center of canvas
-        const newEmojiItem = { id: Date.now(), x: 0.5, y: 0.5, emoji };
-        updateData(widget.id, { emojiItems: [...emojiItems, newEmojiItem] });
-        setShowEmojiPicker(false);
-        updateData(widget.id, { tool: 'pen' }); // Switch back to pen
+      const handleCanvasMouseDown = (e) => {
+        if (tool === 'text') {
+          e.stopPropagation();
+          const pos = getPos(e);
+          const newId = Date.now().toString();
+          const newItem = { id: newId, x: pos.x, y: pos.y, text: 'Text', color, scale: 1 };
+          updateData(widget.id, { textItems: [...textItems, newItem], tool: 'pen' });
+          setSelectedItem({ type: 'text', id: newId });
+        } else if (tool === 'emoji') {
+          setShowEmojiPicker(true);
+        } else {
+          startDrawing(e);
+        }
       };
 
-      const updateTextItem = (id, text) => {
+      // --- Item Dragging, Resizing & Rotating Logic ---
+      const isDraggingItem = useRef(false);
+      const isResizingItem = useRef(false);
+      const isRotatingItem = useRef(false);
+      const dragItemStart = useRef({ x: 0, y: 0, scale: 1, rotation: 0 });
+
+      const handleItemMouseDown = (e, type, id) => {
+        e.stopPropagation();
+        setSelectedItem({ type, id });
+        isDraggingItem.current = true;
+        const rect = canvasRef.current.getBoundingClientRect();
+        dragItemStart.current = { x: e.clientX, y: e.clientY, rect };
+      };
+
+      const handleResizeMouseDown = (e, type, id, currentScale) => {
+        e.stopPropagation();
+        e.preventDefault();
+        setSelectedItem({ type, id });
+        isResizingItem.current = true;
+        dragItemStart.current = { x: e.clientX, y: e.clientY, scale: currentScale || 1 };
+      };
+
+      const handleRotateMouseDown = (e, type, id, currentRotation) => {
+        e.stopPropagation();
+        e.preventDefault();
+        setSelectedItem({ type, id });
+        isRotatingItem.current = true;
+        dragItemStart.current = { x: e.clientX, y: e.clientY, rotation: currentRotation || 0 };
+      };
+
+      useEffect(() => {
+        const handleWindowMove = (e) => {
+          if (isDraggingItem.current && selectedItem) {
+            e.preventDefault();
+            const { type, id } = selectedItem;
+            const { rect } = dragItemStart.current;
+            const dx = (e.clientX - dragItemStart.current.x) / rect.width;
+            const dy = (e.clientY - dragItemStart.current.y) / rect.height;
+
+            dragItemStart.current = { ...dragItemStart.current, x: e.clientX, y: e.clientY };
+
+            const updateList = (list, key) => {
+              updateData(widget.id, { [key]: list.map(item => item.id === id ? { ...item, x: item.x + dx, y: item.y + dy } : item) });
+            };
+
+            if (type === 'text') updateList(textItems, 'textItems');
+            if (type === 'emoji') updateList(emojiItems, 'emojiItems');
+            if (type === 'image') updateList(imageItems, 'imageItems');
+          }
+          // Resize logic
+          if (isResizingItem.current && selectedItem) {
+            e.preventDefault();
+            const { type, id } = selectedItem;
+            const dy = e.clientY - dragItemStart.current.y;
+            const scaleDelta = dy / 100; // 100px drag = 1.0 scale change
+            const newScale = Math.max(0.3, Math.min(5, dragItemStart.current.scale + scaleDelta));
+
+            const updateList = (list, key) => {
+              updateData(widget.id, { [key]: list.map(item => item.id === id ? { ...item, scale: newScale } : item) });
+            };
+            if (type === 'text') updateList(textItems, 'textItems');
+            if (type === 'emoji') updateList(emojiItems, 'emojiItems');
+            if (type === 'image') updateList(imageItems, 'imageItems');
+          }
+          // Rotate logic
+          if (isRotatingItem.current && selectedItem) {
+            e.preventDefault();
+            const { type, id } = selectedItem;
+            const dx = e.clientX - dragItemStart.current.x;
+            const rotationDelta = dx; // 1px = 1 degree
+            const newRotation = (dragItemStart.current.rotation + rotationDelta) % 360;
+
+            const updateList = (list, key) => {
+              updateData(widget.id, { [key]: list.map(item => item.id === id ? { ...item, rotation: newRotation } : item) });
+            };
+            if (type === 'text') updateList(textItems, 'textItems');
+            if (type === 'emoji') updateList(emojiItems, 'emojiItems');
+            if (type === 'image') updateList(imageItems, 'imageItems');
+          }
+        };
+        const handleWindowUp = () => { isDraggingItem.current = false; isResizingItem.current = false; isRotatingItem.current = false; };
+
+        window.addEventListener('mousemove', handleWindowMove);
+        window.addEventListener('mouseup', handleWindowUp);
+        return () => {
+          window.removeEventListener('mousemove', handleWindowMove);
+          window.removeEventListener('mouseup', handleWindowUp);
+        };
+      }, [selectedItem, textItems, emojiItems, imageItems, widget.id]);
+
+
+      const updateItemScale = (delta) => {
+        if (!selectedItem) return;
+        const { type, id } = selectedItem;
+        const updateList = (list, key) => {
+          updateData(widget.id, {
+            [key]: list.map(item => item.id === id ? { ...item, scale: Math.max(0.5, (item.scale || 1) + delta) } : item)
+          });
+        };
+        if (type === 'text') updateList(textItems, 'textItems');
+        if (type === 'emoji') updateList(emojiItems, 'emojiItems');
+        if (type === 'image') updateList(imageItems, 'imageItems');
+      };
+
+      const deleteSelectedItem = () => {
+        if (!selectedItem) return;
+        const { type, id } = selectedItem;
+        if (type === 'text') updateData(widget.id, { textItems: textItems.filter(i => i.id !== id) });
+        if (type === 'emoji') updateData(widget.id, { emojiItems: emojiItems.filter(i => i.id !== id) });
+        if (type === 'image') updateData(widget.id, { imageItems: imageItems.filter(i => i.id !== id) });
+        setSelectedItem(null);
+      };
+
+      const rotateItem = (degrees) => {
+        if (!selectedItem) return;
+        const { type, id } = selectedItem;
+        const updateList = (list, key) => {
+          updateData(widget.id, {
+            [key]: list.map(item => item.id === id ? { ...item, rotation: ((item.rotation || 0) + degrees) % 360 } : item)
+          });
+        };
+        if (type === 'text') updateList(textItems, 'textItems');
+        if (type === 'emoji') updateList(emojiItems, 'emojiItems');
+        if (type === 'image') updateList(imageItems, 'imageItems');
+      };
+
+      const updateTextContent = (id, text) => {
         updateData(widget.id, { textItems: textItems.map(t => t.id === id ? { ...t, text } : t) });
       };
 
-      const deleteTextItem = (id) => {
-        updateData(widget.id, { textItems: textItems.filter(t => t.id !== id) });
-        setEditingTextId(null);
+      const addEmoji = (emoji, e) => {
+        // Add to center
+        const newItem = { id: Date.now().toString(), x: 0.5, y: 0.5, emoji, scale: 1 };
+        updateData(widget.id, { emojiItems: [...emojiItems, newItem] });
+        setShowEmojiPicker(false);
       };
 
-      const deleteEmojiItem = (id) => {
-        updateData(widget.id, { emojiItems: emojiItems.filter(e => e.id !== id) });
+      const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const img = new Image();
+            img.src = ev.target.result;
+            img.onload = () => {
+              // Calculate aspect ratio to fit reasonably
+              const aspect = img.width / img.height;
+              const newItem = {
+                id: Date.now().toString(),
+                x: 0.5, y: 0.5,
+                src: ev.target.result,
+                scale: 1,
+                width: 200, // Base width
+                height: 200 / aspect
+              };
+              updateData(widget.id, { imageItems: [...imageItems, newItem] });
+            };
+          };
+          reader.readAsDataURL(file);
+        }
       };
 
       const savePNG = () => {
         const cvs = canvasRef.current;
         if (!cvs) return;
-
-        // Create a temporary canvas with all elements
         const tempCanvas = document.createElement('canvas');
         const rect = cvs.getBoundingClientRect();
-        tempCanvas.width = rect.width;
-        tempCanvas.height = rect.height;
-        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = rect.width; tempCanvas.height = rect.height;
+        const ctx = tempCanvas.getContext('2d');
+        ctx.fillStyle = 'white'; ctx.fillRect(0, 0, rect.width, rect.height);
 
-        // Fill white background
-        tempCtx.fillStyle = 'white';
-        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-        // Draw lines
-        lines.forEach(line => {
-          tempCtx.beginPath();
-          tempCtx.strokeStyle = line.tool === 'eraser' ? '#ffffff' : line.color;
-          tempCtx.lineWidth = line.size;
-          tempCtx.lineCap = 'round';
-          tempCtx.lineJoin = 'round';
-          tempCtx.moveTo(line.points[0].x * rect.width, line.points[0].y * rect.height);
-          for (let i = 1; i < line.points.length; i++) {
-            tempCtx.lineTo(line.points[i].x * rect.width, line.points[i].y * rect.height);
+        // Draw Images
+        imageItems.forEach(img => {
+          const image = new Image(); image.src = img.src;
+          if (image.complete) {
+            const w = (img.width || 100) * (img.scale || 1); const h = (img.height || 100) * (img.scale || 1);
+            ctx.drawImage(image, img.x * rect.width - w / 2, img.y * rect.height - h / 2, w, h);
           }
-          tempCtx.stroke();
         });
-
-        // Draw text items
+        // Draw Lines
+        lines.forEach(l => {
+          ctx.beginPath(); ctx.strokeStyle = l.tool === 'eraser' ? '#ffffff' : l.color; ctx.lineWidth = l.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+          ctx.moveTo(l.points[0].x * rect.width, l.points[0].y * rect.height);
+          l.points.forEach(p => ctx.lineTo(p.x * rect.width, p.y * rect.height));
+          ctx.stroke();
+        });
+        // Draw Text
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
         textItems.forEach(t => {
-          tempCtx.font = 'bold 16px sans-serif';
-          tempCtx.fillStyle = t.color;
-          tempCtx.fillText(t.text, t.x * rect.width, t.y * rect.height);
+          ctx.font = `bold ${16 * (t.scale || 1)}px sans-serif`; ctx.fillStyle = t.color; ctx.fillText(t.text, t.x * rect.width, t.y * rect.height);
         });
-
-        // Draw emoji items
-        tempCtx.font = '32px serif';
+        // Emoji
         emojiItems.forEach(e => {
-          tempCtx.fillText(e.emoji, e.x * rect.width - 16, e.y * rect.height + 12);
+          ctx.font = `${32 * (e.scale || 1)}px serif`; ctx.fillText(e.emoji, e.x * rect.width, e.y * rect.height);
         });
 
-        // Download
-        const link = document.createElement('a');
-        link.download = `drawing-${Date.now()}.png`;
-        link.href = tempCanvas.toDataURL('image/png');
-        link.click();
+        const link = document.createElement('a'); link.download = `whiteboard-${Date.now()}.png`; link.href = tempCanvas.toDataURL(); link.click();
       };
 
-      const clearAll = () => {
-        updateData(widget.id, { lines: [], textItems: [], emojiItems: [] });
-      };
+      const clearAll = () => updateData(widget.id, { lines: [], textItems: [], emojiItems: [], imageItems: [] });
 
       return (
-        <div className="h-full bg-white flex flex-col relative">
-          <div className="bg-gray-100 p-2 border-b flex items-center justify-between shrink-0">
-            <div className="flex gap-1 items-center">
+        <div className="h-full bg-white flex flex-col relative" onClick={handleCanvasClick}>
+          <div className="bg-gray-100 p-2 border-b flex items-center justify-between shrink-0 gap-2 overflow-x-auto custom-scrollbar">
+            <div className="flex gap-1 items-center shrink-0">
               <input type="color" value={color} onChange={e => updateData(widget.id, { color: e.target.value, tool: 'pen' })} className="w-6 h-6 rounded cursor-pointer border-none" />
-              <button onClick={() => updateData(widget.id, { tool: 'pen' })} className={`p-1.5 rounded ${tool === 'pen' ? 'bg-blue-200 text-blue-800' : 'hover:bg-gray-200'}`} title="Pen"><Edit3 size={16} /></button>
-              <button onClick={() => updateData(widget.id, { tool: 'eraser' })} className={`p-1.5 rounded ${tool === 'eraser' ? 'bg-blue-200 text-blue-800' : 'hover:bg-gray-200'}`} title="Eraser"><div className="w-4 h-4 bg-white border border-gray-400 rounded-sm" /></button>
-              <button onClick={() => updateData(widget.id, { tool: 'text' })} className={`p-1.5 rounded ${tool === 'text' ? 'bg-blue-200 text-blue-800' : 'hover:bg-gray-200'}`} title="Add Text"><Type size={16} /></button>
+              <button onClick={() => updateData(widget.id, { tool: 'pen' })} className={`p-1.5 rounded ${tool === 'pen' ? 'bg-indigo-200 text-indigo-800' : 'hover:bg-gray-200'}`} title="Pen"><Edit3 size={16} /></button>
+              <button onClick={() => updateData(widget.id, { tool: 'eraser' })} className={`p-1.5 rounded ${tool === 'eraser' ? 'bg-indigo-200 text-indigo-800' : 'hover:bg-gray-200'}`} title="Eraser"><div className="w-4 h-4 bg-white border border-gray-400 rounded-sm" /></button>
+              <button onClick={() => updateData(widget.id, { tool: 'text' })} className={`p-1.5 rounded ${tool === 'text' ? 'bg-indigo-200 text-indigo-800' : 'hover:bg-gray-200'}`} title="Add Text"><Type size={16} /></button>
+
               <div className="relative">
-                <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`p-1.5 rounded ${tool === 'emoji' ? 'bg-blue-200 text-blue-800' : 'hover:bg-gray-200'}`} title="Add Sticker">😊</button>
-                {showEmojiPicker && (
-                  <div className="absolute left-0 top-full mt-1 z-50 bg-white rounded-xl shadow-xl border border-gray-200 p-2 w-48 max-h-40 overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
-                    <div className="grid grid-cols-5 gap-1">
-                      {DRAW_EMOJIS.map((emoji, i) => (
-                        <button key={i} onClick={(e) => addEmoji(emoji, e)} className="text-xl p-1 rounded hover:bg-blue-100 transition-colors">
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <button onClick={(e) => { e.stopPropagation(); setShowEmojiPicker(!showEmojiPicker); }} className={`p-1.5 rounded ${showEmojiPicker ? 'bg-indigo-200 text-indigo-800' : 'hover:bg-gray-200'}`} title="Add Sticker"><Smile size={16} /></button>
               </div>
+
+              <button onClick={() => fileInputRef.current.click()} className="p-1.5 rounded hover:bg-gray-200" title="Add Image"><ImageIcon size={16} /></button>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+
+              <div className="w-px h-6 bg-gray-300 mx-1" />
               <input type="range" min="2" max="20" value={size} onChange={e => updateData(widget.id, { size: Number(e.target.value) })} className="w-16" />
             </div>
-            <div className="flex gap-1">
-              <button onClick={savePNG} className="text-green-600 hover:bg-green-50 p-1.5 rounded font-bold text-xs flex items-center gap-1" title="Save as PNG"><Download size={14} /> Save</button>
-              <button onClick={clearAll} className="text-red-500 hover:bg-red-50 p-1.5 rounded font-bold text-xs">Clear</button>
+
+            {selectedItem && (
+              <div className="flex items-center gap-1 bg-white border border-indigo-200 rounded-lg px-2 py-0.5 shadow-sm animate-in fade-in zoom-in-95">
+                <span className="text-[10px] uppercase font-bold text-indigo-300">Selected</span>
+                <div className="w-px h-4 bg-gray-200 mx-1" />
+                <button onClick={deleteSelectedItem} className="p-1 hover:bg-red-50 text-red-500 rounded" title="Delete"><Trash2 size={14} /></button>
+              </div>
+            )}
+
+            <div className="flex gap-1 ml-auto">
+              <button onClick={savePNG} className="text-gray-400 hover:text-green-600 p-1.5" title="Download"><Download size={16} /></button>
+              <button onClick={clearAll} className="text-gray-400 hover:text-red-500 p-1.5" title="Clear All"><RotateCcw size={16} /></button>
             </div>
           </div>
-          <div className="flex-1 relative overflow-hidden">
-            <canvas
-              ref={canvasRef}
-              className="absolute inset-0 w-full h-full touch-none cursor-crosshair"
-              onMouseDown={start}
-              onMouseMove={move}
-              onMouseUp={end}
-              onMouseLeave={end}
-            />
-            {/* Text overlays */}
-            {textItems.map(t => (
-              <div
-                key={t.id}
-                className="absolute cursor-move group"
-                style={{ left: `${t.x * 100}%`, top: `${t.y * 100}%`, transform: 'translate(-50%, -50%)' }}
-              >
-                {editingTextId === t.id ? (
-                  <input
-                    type="text"
-                    value={t.text}
-                    onChange={(e) => updateTextItem(t.id, e.target.value)}
-                    onBlur={() => setEditingTextId(null)}
-                    onKeyDown={(e) => e.key === 'Enter' && setEditingTextId(null)}
-                    autoFocus
-                    className="border-2 border-blue-500 rounded px-1 py-0.5 font-bold outline-none min-w-[60px]"
-                    style={{ color: t.color }}
-                  />
-                ) : (
-                  <div
-                    onClick={() => setEditingTextId(t.id)}
-                    className="font-bold text-base px-1 py-0.5 rounded hover:bg-blue-50 border border-transparent hover:border-blue-300"
-                    style={{ color: t.color }}
-                  >
-                    {t.text}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); deleteTextItem(t.id); }}
-                      className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100"
-                    >×</button>
+
+          <div className="flex-1 relative overflow-hidden bg-white cursor-crosshair">
+            <canvas ref={canvasRef} className="absolute inset-0 w-full h-full touch-none" onMouseDown={handleCanvasMouseDown} onMouseMove={moveDrawing} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} />
+
+            {/* Emoji Picker Popup - inside drawing area to avoid clipping */}
+            {showEmojiPicker && (
+              <div className="absolute top-4 left-4 z-[100] bg-white rounded-xl shadow-2xl border border-gray-200 p-3 w-72 max-h-56 overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Add Sticker</span>
+                  <button onClick={() => setShowEmojiPicker(false)} className="p-1 hover:bg-gray-100 rounded-full text-gray-400"><X size={14} /></button>
+                </div>
+                <div className="grid grid-cols-6 gap-1">
+                  {DRAW_EMOJIS.map((em, i) => <button key={i} onClick={(e) => addEmoji(em, e)} className="text-2xl p-1.5 rounded-lg hover:bg-indigo-100 transition-colors">{em}</button>)}
+                </div>
+              </div>
+            )}
+
+            {/* Render Items */}
+            {imageItems.map(img => (
+              <div key={img.id} onMouseDown={(e) => handleItemMouseDown(e, 'image', img.id)} className={`absolute cursor-move group ${selectedItem?.id === img.id ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`} style={{ left: `${img.x * 100}%`, top: `${img.y * 100}%`, transform: 'translate(-50%, -50%)', width: (img.width || 100) * (img.scale || 1), height: (img.height || 100) * (img.scale || 1) }}>
+                <img src={img.src} draggable={false} className="w-full h-full object-contain pointer-events-none" />
+                {selectedItem?.id === img.id && (
+                  <div onMouseDown={(e) => handleResizeMouseDown(e, 'image', img.id, img.scale)} className="absolute -bottom-2 -right-2 w-5 h-5 bg-indigo-500 rounded-full cursor-nwse-resize border-2 border-white shadow-lg hover:scale-110 transition-transform flex items-center justify-center">
+                    <Maximize2 size={10} className="text-white" />
                   </div>
                 )}
               </div>
             ))}
-            {/* Emoji overlays */}
-            {emojiItems.map(e => (
+
+            {textItems.map(t => (
               <div
-                key={e.id}
-                className="absolute cursor-move group text-2xl"
-                style={{ left: `${e.x * 100}%`, top: `${e.y * 100}%`, transform: 'translate(-50%, -50%)' }}
+                key={t.id}
+                onMouseDown={(e) => handleItemMouseDown(e, 'text', t.id)}
+                onClick={(e) => { e.stopPropagation(); setSelectedItem({ type: 'text', id: t.id }); }}
+                className={`absolute cursor-move ${selectedItem?.id === t.id ? 'ring-2 ring-indigo-500 ring-offset-4 rounded' : ''}`}
+                style={{ left: `${t.x * 100}%`, top: `${t.y * 100}%`, transform: `translate(-50%, -50%) rotate(${t.rotation || 0}deg)` }}
               >
-                {e.emoji}
-                <button
-                  onClick={() => deleteEmojiItem(e.id)}
-                  className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100"
-                >×</button>
+                {selectedItem?.id === t.id ? (
+                  <div className="relative">
+                    <input value={t.text} onMouseDown={(e) => { e.stopPropagation(); }} onChange={e => updateTextContent(t.id, e.target.value)} className="bg-transparent border-none outline-none font-bold text-center min-w-[50px]" style={{ color: t.color, fontSize: `${16 * (t.scale || 1)}px` }} autoFocus />
+                    <div onMouseDown={(e) => handleResizeMouseDown(e, 'text', t.id, t.scale)} className="absolute -bottom-3 -right-3 w-6 h-6 bg-indigo-500 rounded-full cursor-nwse-resize border-2 border-white shadow-lg hover:scale-125 transition-transform flex items-center justify-center z-10">
+                      <Maximize2 size={12} className="text-white" />
+                    </div>
+                    <div onMouseDown={(e) => handleRotateMouseDown(e, 'text', t.id, t.rotation)} className="absolute -top-3 -left-3 w-6 h-6 bg-blue-500 rounded-full cursor-grab border-2 border-white shadow-lg hover:scale-125 transition-transform flex items-center justify-center z-10" title="Drag to rotate">
+                      <RotateCw size={12} className="text-white" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="font-bold whitespace-nowrap select-none" style={{ color: t.color, fontSize: `${16 * (t.scale || 1)}px` }}>{t.text}</div>
+                )}
+              </div>
+            ))}
+
+            {emojiItems.map(emoji => (
+              <div
+                key={emoji.id}
+                onMouseDown={(ev) => handleItemMouseDown(ev, 'emoji', emoji.id)}
+                onClick={(e) => { e.stopPropagation(); setSelectedItem({ type: 'emoji', id: emoji.id }); }}
+                className={`absolute cursor-move select-none ${selectedItem?.id === emoji.id ? 'ring-2 ring-indigo-500 ring-offset-2 rounded-lg' : ''}`}
+                style={{ left: `${emoji.x * 100}%`, top: `${emoji.y * 100}%`, transform: `translate(-50%, -50%) rotate(${emoji.rotation || 0}deg)`, fontSize: `${32 * (emoji.scale || 1)}px` }}
+              >
+                <span className="relative inline-block">
+                  {emoji.emoji}
+                  {selectedItem?.id === emoji.id && (
+                    <>
+                      <div onMouseDown={(e) => handleResizeMouseDown(e, 'emoji', emoji.id, emoji.scale)} className="absolute -bottom-3 -right-3 w-6 h-6 bg-indigo-500 rounded-full cursor-nwse-resize border-2 border-white shadow-lg hover:scale-125 transition-transform flex items-center justify-center z-10">
+                        <Maximize2 size={12} className="text-white" />
+                      </div>
+                      <div onMouseDown={(e) => handleRotateMouseDown(e, 'emoji', emoji.id, emoji.rotation)} className="absolute -top-3 -left-3 w-6 h-6 bg-blue-500 rounded-full cursor-grab border-2 border-white shadow-lg hover:scale-125 transition-transform flex items-center justify-center z-10" title="Drag to rotate">
+                        <RotateCw size={12} className="text-white" />
+                      </div>
+                    </>
+                  )}
+                </span>
               </div>
             ))}
           </div>
@@ -1214,17 +1399,46 @@
     // --- Background Picker Modal (Updated) ---
     const BackgroundPicker = ({ currentBg, onSelect, onClose }) => {
       const fileInputRef = useRef(null);
-
-      // Local state for the selected text color in case we are uploading
       const [selectedTextColor, setSelectedTextColor] = useState(currentBg.textColor || 'text-slate-800');
+      const [customBgs, setCustomBgs] = useState([]);
+
+      useEffect(() => {
+        try {
+          const saved = JSON.parse(localStorage.getItem('homeroom_custom_bgs')) || [];
+          if (Array.isArray(saved)) setCustomBgs(saved);
+        } catch (e) { }
+      }, []);
+
+      const saveCustomBg = (newBg) => {
+        const updated = [...customBgs, newBg];
+        setCustomBgs(updated);
+        localStorage.setItem('homeroom_custom_bgs', JSON.stringify(updated));
+      };
+
+      const removeCustomBg = (id, e) => {
+        e.stopPropagation();
+        if (confirm('Delete this background?')) {
+          const updated = customBgs.filter(b => b.id !== id);
+          setCustomBgs(updated);
+          localStorage.setItem('homeroom_custom_bgs', JSON.stringify(updated));
+        }
+      };
 
       const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
           const reader = new FileReader();
-          // Default custom uploads to white text unless changed (logic could be refined)
           reader.onloadend = () => {
-            onSelect({ id: 'custom', name: 'Custom Upload', type: 'custom', src: reader.result, textColor: selectedTextColor });
+            // Create persistent custom BG
+            const newBg = {
+              id: `custom-${Date.now()}`,
+              name: 'Custom',
+              type: 'custom',
+              src: reader.result,
+              textColor: selectedTextColor
+            };
+            saveCustomBg(newBg);
+            onSelect(newBg);
             onClose();
           };
           reader.readAsDataURL(file);
@@ -1232,21 +1446,17 @@
       };
 
       const handlePresetSelect = (bg) => {
-        // Apply the preset, but we might also want to respect the user's override if they just clicked the toggle?
-        // For simplicity, Presets enforce their default color, but user can change it AFTER.
         onSelect(bg);
         onClose();
       };
 
       const handleTextColorChange = (colorClass) => {
-        // If we are just changing text color of the CURRENT background
         onSelect({ ...currentBg, textColor: colorClass });
         setSelectedTextColor(colorClass);
-        // Don't close, let them see the selection
       };
 
       return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-4 border-b flex justify-between items-center bg-gray-50">
               <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2"><Palette size={20} /> Appearance</h3>
@@ -1266,19 +1476,25 @@
             </div>
 
             <div className="p-6 overflow-y-auto custom-scrollbar">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 block">Background Image</label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {/* Upload Option */}
-                <div
-                  onClick={() => fileInputRef.current.click()}
-                  className="aspect-video bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer flex flex-col items-center justify-center gap-2 transition-all group"
-                >
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 block">Custom Backgrounds</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+                <div onClick={() => fileInputRef.current.click()} className="aspect-video bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer flex flex-col items-center justify-center gap-2 transition-all group">
                   <div className="p-3 bg-white rounded-full shadow-sm group-hover:scale-110 transition-transform"><UploadCloud size={24} className="text-blue-500" /></div>
-                  <span className="text-sm font-bold text-gray-500 group-hover:text-blue-600">Upload Image</span>
+                  <span className="text-sm font-bold text-gray-500 group-hover:text-blue-600">Upload New</span>
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                 </div>
+                {customBgs.map(bg => (
+                  <div key={bg.id} onClick={() => handlePresetSelect(bg)} className={`relative aspect-video rounded-xl overflow-hidden cursor-pointer shadow-sm hover:shadow-lg transition-all ring-2 ${currentBg.id === bg.id ? 'ring-blue-500 ring-offset-2' : 'ring-transparent hover:ring-gray-200'} group`}>
+                    <img src={bg.src} className="w-full h-full object-cover" />
+                    <button onClick={(e) => removeCustomBg(bg.id, e)} className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 hover:scale-110 transition-all shadow-md" title="Delete Background">
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
 
-                {/* Presets */}
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 block">Presets</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {BACKGROUNDS.map(bg => (
                   <div
                     key={bg.id}
@@ -1450,19 +1666,26 @@
                 return (
                   <div
                     key={item.id}
-                    draggable
-                    onDragStart={() => handleDragStart(index)}
                     onDragOver={handleDragOver}
                     onDrop={() => handleDrop(index)}
-                    className={`relative group flex gap-2 p-2 rounded-lg border transition-all cursor-move ${isCurrent ? 'bg-indigo-100 border-indigo-400 ring-2 ring-indigo-300' : 'bg-white border-gray-200 hover:border-indigo-200'}`}
+                    className={`relative group flex gap-2 p-2 rounded-lg border transition-all ${isCurrent ? 'bg-indigo-100 border-indigo-400 ring-2 ring-indigo-300' : 'bg-white border-gray-200 hover:border-indigo-200'}`}
                   >
+                    {/* Dedicated drag handle */}
+                    <div
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      className="flex items-center cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 shrink-0"
+                      title="Drag to reorder"
+                    >
+                      <GripVertical size={16} />
+                    </div>
                     {isCurrent && <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />}
-                    <div className="flex flex-col items-center shrink-0 w-28"> {/* WIDENED from w-20 to w-28 */}
+                    <div className="flex flex-col items-center shrink-0 w-24">
                       <input
                         type="time"
                         value={item.time || ''}
                         onChange={(e) => updateItem(index, 'time', e.target.value)}
-                        className="w-full text-xs font-bold text-indigo-600 bg-transparent border-none text-center cursor-pointer" // Increased text size slightly
+                        className="w-full text-xs font-bold text-indigo-600 bg-transparent border-none text-center cursor-pointer"
                       />
                     </div>
                     <div className="relative flex items-center text-xl shrink-0">
@@ -1522,13 +1745,14 @@
 
     // --- MISSING COMPONENTS (Restored) ---
     // (Onboarding now works with object roster)
-    const OnboardingModal = ({ onComplete }) => {
+    const OnboardingModal = ({ onComplete, onSaveRoster }) => {
       const [text, setText] = useState(DEFAULT_NAMES.join('\n'));
       const handleSave = () => {
         const names = text.split('\n').map(n => n.trim()).filter(n => n);
         if (names.length > 0) {
           const roster = names.map(n => ({ id: Math.random().toString(36).substr(2, 9), name: n, active: true }));
           saveRoster(roster);
+          if (onSaveRoster) onSaveRoster(roster);
         }
         onComplete();
       };
@@ -1592,23 +1816,32 @@
         onClose();
       };
 
+      const [feedbackStatus, setFeedbackStatus] = useState('');
+
       const handleFeedbackSubmit = () => {
         const subject = encodeURIComponent('HomeRoom Feedback');
         const body = encodeURIComponent(`Name: ${feedbackName}\nEmail: ${feedbackEmail}\n\nMessage:\n${feedbackMessage}`);
         window.location.href = `mailto:jeffhennigar@gmail.com?subject=${subject}&body=${body}`;
+        setFeedbackName(''); setFeedbackEmail(''); setFeedbackMessage('');
+        setFeedbackStatus('Opening email client...');
+        setTimeout(() => setFeedbackStatus(''), 3000);
       };
 
       const handleGmailSubmit = () => {
         const subject = encodeURIComponent('HomeRoom Feedback');
         const body = encodeURIComponent(`Name: ${feedbackName}\nEmail: ${feedbackEmail}\n\nMessage:\n${feedbackMessage}`);
         window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=jeffhennigar@gmail.com&su=${subject}&body=${body}`, '_blank');
+        setFeedbackName(''); setFeedbackEmail(''); setFeedbackMessage('');
+        setFeedbackStatus('Opening Gmail...');
+        setTimeout(() => setFeedbackStatus(''), 3000);
       };
 
       const handleCopyFeedback = () => {
         const text = `To: jeffhennigar@gmail.com\nSubject: HomeRoom Feedback\n\nName: ${feedbackName}\nEmail: ${feedbackEmail}\n\nMessage:\n${feedbackMessage}`;
         navigator.clipboard.writeText(text).then(() => {
           setFeedbackCopied(true);
-          setTimeout(() => setFeedbackCopied(false), 2000);
+          setFeedbackStatus('Copied to clipboard!');
+          setTimeout(() => { setFeedbackCopied(false); setFeedbackStatus(''); }, 3000);
         });
       };
 
@@ -1802,7 +2035,7 @@
               {activeTab === 'about' && (
                 <div className="p-6">
                   <div className="flex flex-col items-center mb-6">
-                    <img src="effortless_edtech_logo.png" alt="Effortless EdTech" className="w-24 h-24 rounded-full bg-gradient-to-br from-teal-400 to-orange-400 p-1 shadow-lg mb-3" />
+                    <img src="https://raw.githubusercontent.com/jeffhennigar/homeroom/main/effortless_edtech_logo.png" alt="Effortless EdTech" className="w-24 h-24 rounded-full bg-white p-1 shadow-lg mb-3 object-contain" />
                     <h2 className="text-lg font-bold text-gray-800">HomeRoom</h2>
                     <p className="text-gray-500 text-sm text-center">A classroom management tool by <span className="font-semibold text-teal-600">Effortless EdTech</span></p>
                   </div>
@@ -1881,6 +2114,7 @@
                     <p className="text-[10px] text-gray-400 text-center mt-2">
                       If "Send" doesn't work, use "Copy Text" and paste it into your email manually to <b>jeffhennigar@gmail.com</b>
                     </p>
+                    {feedbackStatus && <div className="text-center text-sm font-bold text-green-600 mt-2 bg-green-50 p-2 rounded-lg animate-in fade-in slide-in-from-bottom-2">{feedbackStatus}</div>}
                   </div>
                 </div>
               )}
@@ -1915,7 +2149,6 @@
       const [maxZIndex, setMaxZIndex] = useState(10);
       const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }));
       const [isDockMinimized, setIsDockMinimized] = useState(false);
-      const [isDockEditing, setIsDockEditing] = useState(false);
       const [dockOrder, setDockOrder] = useState(() => {
         const stored = getDockOrder();
         if (Array.isArray(stored)) {
@@ -2045,9 +2278,8 @@
         saveBackground(newBg);
       };
 
-      // ... (addWidget, removeWidget, updateWidgetLayout, updateWidgetData, bringToFront, nextSlide, prevSlide, saveDock, handleDockDrop, renderWidgetContent SAME AS PREVIOUS)
-      // Including minimal versions for functionality
-      const addWidget = (type) => { if (isDockEditing) return; const id = Date.now().toString(); const size = WIDGET_SIZES[type]; const position = { x: (window.innerWidth / 2) - (size.width / 2) + (Math.random() * 40 - 20), y: (window.innerHeight / 2) - (size.height / 2) + (Math.random() * 40 - 20) }; let data = { fontSize: 16 }; if (type === 'TIMER') data = { ...data, timeLeft: 120, isRunning: false }; if (type === 'RANDOMIZER') data = { ...data, students: getInitialStudents(), currentName: null, isAnimating: false }; if (type === 'GROUP_MAKER') data = { ...data, students: getInitialStudents(), groupCount: 4, groups: [] }; if (type === 'SEAT_PICKER') { const savedDesks = getSeatLayout(); if (savedDesks && savedDesks.length > 0) { data = { ...data, desks: savedDesks, isEditing: false }; } else { const initialStudents = getInitialStudents(); const initialDesks = initialStudents.slice(0, 8).map((s, i) => ({ id: `desk-${i}`, x: 50 + (i % 4) * 120, y: 50 + Math.floor(i / 4) * 100, student: s.name, color: 'blue', type: 'student', rotation: 0 })); data = { ...data, desks: initialDesks, isEditing: false }; } } if (type === 'TEXT') data = { ...data, content: '' }; if (type === 'WEBCAM') data = { ...data, isMirrored: true, isActive: true }; if (type === 'DICE') data = { ...data, sides: 6, diceCount: 1, results: [1], isRolling: false }; if (type === 'TRAFFIC') data = { ...data, activeLight: null }; if (type === 'QR') data = { ...data, url: '' }; if (type === 'VOTE') data = { ...data, question: 'Class Poll', options: [{ id: 1, text: 'Yes', count: 0 }, { id: 2, text: 'No', count: 0 }] }; if (type === 'WHITEBOARD') data = { ...data, lines: [], color: '#000000', size: 5, tool: 'pen' }; if (type === 'SCHEDULE') { const template = getScheduleTemplate(); const today = DAYS_OF_WEEK[new Date().getDay()]; data = { ...data, items: template[today] || [] }; } const newWidget = { id, type, position, size, zIndex: maxZIndex + 1, data }; setWidgets(prev => [...prev, newWidget]); setMaxZIndex(prev => prev + 1); setSelectedId(id); };
+      // --- WIDGET MANAGEMENT ---
+      const addWidget = (type) => { const id = Date.now().toString(); const size = WIDGET_SIZES[type]; const position = { x: (window.innerWidth / 2) - (size.width / 2) + (Math.random() * 40 - 20), y: (window.innerHeight / 2) - (size.height / 2) + (Math.random() * 40 - 20) }; let data = { fontSize: 16 }; if (type === 'TIMER') data = { ...data, timeLeft: 120, isRunning: false, mode: 'visual' }; if (type === 'RANDOMIZER') data = { ...data, students: getInitialStudents(), currentName: null, isAnimating: false }; if (type === 'GROUP_MAKER') data = { ...data, students: getInitialStudents(), groupCount: 4, groups: [] }; if (type === 'SEAT_PICKER') { const savedDesks = getSeatLayout(); if (savedDesks && savedDesks.length > 0) { data = { ...data, desks: savedDesks, isEditing: false }; } else { const initialStudents = getInitialStudents(); const initialDesks = initialStudents.slice(0, 8).map((s, i) => ({ id: `desk-${i}`, x: 50 + (i % 4) * 120, y: 50 + Math.floor(i / 4) * 100, student: s.name, color: 'blue', type: 'student', rotation: 0 })); data = { ...data, desks: initialDesks, isEditing: false }; } } if (type === 'TEXT') data = { ...data, content: '' }; if (type === 'WEBCAM') data = { ...data, isMirrored: true, isActive: true }; if (type === 'DICE') data = { ...data, sides: 6, diceCount: 1, results: [1], isRolling: false }; if (type === 'TRAFFIC') data = { ...data, activeLight: null }; if (type === 'QR') data = { ...data, url: '' }; if (type === 'VOTE') data = { ...data, question: 'Class Poll', options: [{ id: 1, text: 'Yes', count: 0 }, { id: 2, text: 'No', count: 0 }] }; if (type === 'WHITEBOARD') data = { ...data, lines: [], color: '#000000', size: 5, tool: 'pen' }; if (type === 'SCHEDULE') { const template = getScheduleTemplate(); const today = DAYS_OF_WEEK[new Date().getDay()]; data = { ...data, items: template[today] || [] }; } const newWidget = { id, type, position, size, zIndex: maxZIndex + 1, data }; setWidgets(prev => [...prev, newWidget]); setMaxZIndex(prev => prev + 1); setSelectedId(id); };
       const removeWidget = (id) => { const widget = widgets.find(w => w.id === id); if (widget && widget.type === 'SEAT_PICKER' && widget.data.desks) { saveSeatLayout(widget.data.desks); } setWidgets(prev => prev.filter(w => w.id !== id)); if (selectedId === id) setSelectedId(null); };
       const updateWidgetLayout = useCallback((id, newPos, newSize) => { setWidgets(prev => prev.map(w => w.id === id ? { ...w, position: newPos, size: newSize } : w)); }, [setWidgets]);
       const updateWidgetData = useCallback((id, updates) => { setWidgets(prev => prev.map(w => w.id === id ? { ...w, data: { ...w.data, ...updates } } : w)); }, [setWidgets]);
@@ -2064,7 +2296,10 @@
             draggable={!isDockLocked}
             onDragStart={(e) => {
               e.dataTransfer.setData('widgetType', id);
-              if (location === 'drawer') setShowMoreDrawer(false);
+              // Don't close drawer immediately on drag start so we can drag OUT of it
+            }}
+            onDragEnd={() => {
+              // Keep drawer open for reordering
             }}
             onDragOver={(e) => {
               if (!isDockLocked) {
@@ -2080,19 +2315,8 @@
               }
             }}
             onClick={() => {
-              const widget = {
-                id: Date.now().toString(),
-                type: id,
-                x: 100 + Math.random() * 50,
-                y: 100 + Math.random() * 50,
-                width: WIDGET_SIZES[id].width,
-                height: WIDGET_SIZES[id].height,
-                zIndex: maxZIndex + 1,
-                data: { fontSize: 16 } // Basic Init
-              };
-              // Specific Init Logic (Duplicated from addWidget for now, or just call addWidget? addWidget uses isDockEditing check which might be undesirable here? No, addWidget is fine)
-              // Actually, renderDockItem's onClick used `setWidgets` directly in my previous snippet? 
-              // Let's just call addWidget(id) to keep it DRY and safe.
+              // When unlocked (edit mode), don't add widget on click - only drag works
+              if (!isDockLocked) return;
               addWidget(id);
               if (location === 'drawer') setShowMoreDrawer(false);
             }}
@@ -2119,7 +2343,7 @@
           backgroundPosition: 'center'
         }}>
           {/* Modals */}
-          {showOnboarding && <OnboardingModal onComplete={() => setShowOnboarding(false)} />}
+          {showOnboarding && <OnboardingModal onComplete={() => setShowOnboarding(false)} onSaveRoster={(newRoster) => setRoster(newRoster)} />}
           {showSettingsModal && <SettingsModal
             roster={roster}
             onClose={() => { setShowSettingsModal(false); setSettingsInitialTab('roster'); }}
@@ -2160,7 +2384,24 @@
           <div className="absolute inset-0 z-30 pointer-events-none">{widgets.map(w => (<DraggableResizable key={w.id} id={w.id} position={w.position} size={w.size} zIndex={w.zIndex} isSelected={selectedId === w.id} onSelect={bringToFront} onUpdate={updateWidgetLayout} onRemove={removeWidget} onFontSizeChange={(d) => updateWidgetData(w.id, { fontSize: Math.max(8, (w.data.fontSize || 16) + d) })}>{renderWidgetContent(w)}</DraggableResizable>))}</div>
 
           {/* Slide Controls */}
-          <div className="absolute bottom-6 right-8 z-50 flex items-center pointer-events-none"><div className="pointer-events-auto flex items-center gap-0.5 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-1 border border-white/60 ring-1 ring-black/5"><button onClick={prevSlide} disabled={currentSlideIndex === 0} className="p-1.5 hover:bg-blue-50 rounded-xl text-gray-500 hover:text-blue-600 transition-all duration-200 disabled:opacity-20 group active:scale-95"><ChevronLeft size={20} /></button><div className="px-2 flex items-center justify-center min-w-[35px]"><span className="text-[10px] font-bold text-blue-600 leading-none">{currentSlideIndex + 1} / {slides.length}</span></div><button onClick={nextSlide} className="p-1.5 hover:bg-blue-50 rounded-xl text-gray-500 hover:text-blue-600 transition-all duration-200 group active:scale-95 flex items-center justify-center">{currentSlideIndex === slides.length - 1 ? <Plus size={20} /> : <ChevronRight size={20} />}</button></div></div>
+          <div className="absolute bottom-6 right-8 z-50 flex items-center pointer-events-none">
+            <div className="pointer-events-auto flex items-center gap-0.5 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-1 border border-white/60 ring-1 ring-black/5">
+              <button onClick={prevSlide} disabled={currentSlideIndex === 0} className="p-1.5 hover:bg-blue-50 rounded-xl text-gray-500 hover:text-blue-600 transition-all duration-200 disabled:opacity-20 group active:scale-95"><ChevronLeft size={20} /></button>
+              <div className="px-2 flex items-center justify-center min-w-[35px]"><span className="text-[10px] font-bold text-blue-600 leading-none">{currentSlideIndex + 1} / {slides.length}</span></div>
+              <button onClick={nextSlide} className="p-1.5 hover:bg-blue-50 rounded-xl text-gray-500 hover:text-blue-600 transition-all duration-200 group active:scale-95 flex items-center justify-center">{currentSlideIndex === slides.length - 1 ? <Plus size={20} /> : <ChevronRight size={20} />}</button>
+              {slides.length > 1 && (
+                <>
+                  <div className="w-px h-4 bg-gray-300 mx-1" />
+                  <button onClick={() => {
+                    if (confirm('Delete this page?')) {
+                      setSlides(prev => prev.filter((_, i) => i !== currentSlideIndex));
+                      if (currentSlideIndex > 0) setCurrentSlideIndex(prev => prev - 1);
+                    }
+                  }} className="p-1.5 hover:bg-red-50 rounded-xl text-gray-400 hover:text-red-600 transition-all duration-200 active:scale-95" title="Delete Page"><Trash2 size={16} /></button>
+                </>
+              )}
+            </div>
+          </div>
 
           {/* Dock */}
           <div className="absolute bottom-6 left-0 right-0 z-50 flex flex-col items-center justify-end pointer-events-none">
@@ -2195,7 +2436,13 @@
                     onDragOver={(e) => {
                       if (!isDockLocked) {
                         e.preventDefault();
-                        setShowMoreDrawer(true); // Auto open on hover drag
+                        setShowMoreDrawer(true);
+                      }
+                    }}
+                    onDrop={(e) => {
+                      if (!isDockLocked) {
+                        e.preventDefault();
+                        handleDockDrop(e, 'drawer');
                       }
                     }}
                   >
