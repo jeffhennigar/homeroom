@@ -1,4 +1,4 @@
-# HomeRoom Antigravity 🚀
+# HomeRoom 🚀
 
 **The Ultimate Classroom Dashboard**
 
@@ -67,4 +67,4 @@ Although the production version is a single file, the source code is organized f
    This generates the updated `single_file_version.html`.
 
 ---
-*Created by Antigravity*
+*Created with Antigravity*
