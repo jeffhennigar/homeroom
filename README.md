@@ -34,37 +34,7 @@ This entire application runs from a **single HTML file**.
 2. Open it in Chrome, Edge, or any modern browser.
 3. That's it! No internet required after download.
 
-### Option 2: GitHub Pages (Web Version)
-This repository is configured to deploy automatically to GitHub Pages.
-- **Live URL**: `https://<your-username>.github.io/<repo-name>/`
+### Option 2: Visit the site online!
+https://homeroom-1094328352872.us-central1.run.app
 
-### Option 3: Docker
-Run HomeRoom in a container:
-```bash
-docker build -t homeroom .
-docker run -d -p 8080:80 homeroom
-```
-Access it at `http://localhost:8080`.
-
----
-
-## 💻 For Developers
-
-Although the production version is a single file, the source code is organized for development.
-
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
-2. **Run Dev Server**:
-   ```bash
-   npm run dev
-   ```
-3. **Build Single File**:
-   ```bash
-   npm run build:single
-   ```
-   This generates the updated `single_file_version.html`.
-
----
 *Created with Antigravity*
