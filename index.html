@@ -256,16 +256,17 @@
     };
 
     const DiceWidget = ({ widget, updateData }) => {
-      const { sides = 6, results = [1], isRolling, fontSize = 16 } = widget.data;
+      const { sides = 6, diceCount = 1, results = [1], isRolling, fontSize = 16 } = widget.data;
       const [showSettings, setShowSettings] = useState(false);
-      const displayResults = results || [1];
+      // Ensure results match diceCount
+      const displayResults = (results && results.length === diceCount) ? results : Array(diceCount).fill(1).map((_, i) => (results[i] || 1));
 
       const roll = () => {
         if (isRolling) return;
         updateData(widget.id, { isRolling: true });
         let count = 0;
         const animate = () => {
-          const temp = Array.from({ length: 1 }, () => Math.floor(Math.random() * sides) + 1);
+          const temp = Array.from({ length: diceCount }, () => Math.floor(Math.random() * sides) + 1);
           updateData(widget.id, { results: temp });
           count++;
           if (count < 10) { setTimeout(animate, 80); }
@@ -274,7 +275,7 @@
         animate();
       };
 
-      const renderDot = (active) => <div className={`w-3 h-3 rounded-full ${active ? 'bg-indigo-600' : 'bg-transparent'}`} />;
+      const renderDot = (active) => <div className={`w-2.5 h-2.5 rounded-full ${active ? 'bg-indigo-600' : 'bg-transparent'}`} />; // Slightly smaller dots for 2 dice
 
       const renderFace = (num) => {
         if (sides !== 6) return <span className="font-black text-indigo-800" style={{ fontSize: (fontSize * 3) + 'px' }}>{num}</span>;
@@ -285,7 +286,7 @@
         };
         const activeDots = positions[num] || [];
         return (
-          <div className="grid grid-cols-3 gap-1.5 p-2">
+          <div className="grid grid-cols-3 gap-1 p-2">
             {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => renderDot(activeDots.includes(i)))}
           </div>
         );
@@ -295,10 +296,18 @@
         return (
           <div className="h-full bg-white flex flex-col p-4">
             <div className="flex justify-between items-center mb-4"><h3 className="font-bold">Dice Settings</h3><button onClick={() => setShowSettings(false)} className="text-blue-600">Done</button></div>
-            <label className="text-sm font-bold text-gray-700">Number of Sides</label>
-            <div className="flex items-center gap-2 mt-2">
-              <input type="range" min="2" max="20" value={sides} onChange={e => updateData(widget.id, { sides: Number(e.target.value) })} className="flex-1 accent-indigo-600" />
-              <span className="font-bold text-indigo-600 w-8 text-center">{sides}</span>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-bold text-gray-700 block mb-2">Number of Dice</label>
+                <div className="flex gap-2">
+                  <button onClick={() => updateData(widget.id, { diceCount: 1 })} className={`flex-1 py-2 rounded-lg font-bold transition-colors ${diceCount === 1 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'}`}>1 Die</button>
+                  <button onClick={() => updateData(widget.id, { diceCount: 2 })} className={`flex-1 py-2 rounded-lg font-bold transition-colors ${diceCount === 2 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'}`}>2 Dice</button>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-bold text-gray-700 block mb-2">Sides: {sides}</label>
+                <input type="range" min="2" max="20" value={sides} onChange={e => updateData(widget.id, { sides: Number(e.target.value) })} className="w-full accent-indigo-600" />
+              </div>
             </div>
           </div>
         );
@@ -307,10 +316,16 @@
       return (
         <div className="h-full bg-gradient-to-br from-indigo-50 to-white flex flex-col items-center justify-center relative p-4 select-none cursor-pointer group" onClick={roll}>
           <button onClick={(e) => { e.stopPropagation(); setShowSettings(true); }} className="absolute top-2 right-2 p-2 text-gray-300 hover:text-indigo-600 rounded-full hover:bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity"><Settings size={16} /></button>
-          <div className={`relative w-32 h-32 bg-white rounded-2xl shadow-xl border-2 border-indigo-100 flex items-center justify-center transform transition-transform ${isRolling ? 'rotate-180 scale-105' : ''}`}>
-            {renderFace(displayResults[0])}
+
+          <div className="flex gap-4 items-center justify-center w-full h-full">
+            {displayResults.map((val, idx) => (
+              <div key={idx} className={`relative shadow-xl border-2 border-indigo-100 flex items-center justify-center transform transition-transform bg-white ${isRolling ? 'rotate-180 scale-105' : ''} ${diceCount === 1 ? 'w-32 h-32 rounded-2xl' : 'w-24 h-24 rounded-xl'}`}>
+                {renderFace(val)}
+              </div>
+            ))}
           </div>
-          <div className="text-indigo-400 font-bold text-[10px] uppercase mt-6 tracking-widest">{isRolling ? "Rolling..." : `Click to Roll`}</div>
+
+          <div className="text-indigo-400 font-bold text-[10px] uppercase mt-4 tracking-widest absolute bottom-4">{isRolling ? "Rolling..." : `Click to Roll`}</div>
         </div>
       );
     };
@@ -407,11 +422,12 @@
       const handleMouseDown = (e) => { e.stopPropagation(); onSelect(id); setIsDragging(true); startMousePos.current = { x: e.clientX, y: e.clientY }; startWidgetPos.current = { ...position }; };
       const handleResizeStart = (e) => { e.stopPropagation(); e.preventDefault(); onSelect(id); setIsResizing(true); startMousePos.current = { x: e.clientX, y: e.clientY }; startWidgetPos.current = { ...position }; startWidgetSize.current = { ...size }; };
       useEffect(() => { if (!isDragging && !isResizing) return; const handleMouseMove = (e) => { e.preventDefault(); const dx = e.clientX - startMousePos.current.x; const dy = e.clientY - startMousePos.current.y; if (isDragging) { onUpdateRef.current(id, { x: startWidgetPos.current.x + dx, y: startWidgetPos.current.y + dy }, sizeRef.current); } else if (isResizing) { const newWidth = Math.max(200, startWidgetSize.current.width + dx); const newHeight = Math.max(150, startWidgetSize.current.height + dy); onUpdateRef.current(id, positionRef.current, { width: newWidth, height: newHeight }); } }; const handleMouseUp = () => { setIsDragging(false); setIsResizing(false); }; window.addEventListener('mousemove', handleMouseMove); window.addEventListener('mouseup', handleMouseUp); return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); }; }, [isDragging, isResizing, id]);
-      return (<div className={`absolute flex flex-col bg-white rounded-xl shadow-xl overflow-hidden border-2 transition-shadow duration-200 ${isSelected ? 'border-blue-500 shadow-2xl' : 'border-transparent border-gray-100'}`} style={{ left: position.x, top: position.y, width: size.width, height: size.height, zIndex: isSelected ? 9999 : (zIndex + 100), touchAction: 'none' }} onMouseDown={() => { if (!isSelected) onSelect(id); }}> <div className="h-8 bg-gray-50 flex items-center justify-between px-2 cursor-move border-b border-gray-100 group select-none flex-shrink-0" onMouseDown={handleMouseDown}> <div className="flex items-center gap-1"> <button onClick={(e) => { e.stopPropagation(); onFontSizeChange?.(-2); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"><Minus size={14} strokeWidth={3} /></button> <button onClick={(e) => { e.stopPropagation(); onFontSizeChange?.(2); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"><Plus size={14} strokeWidth={3} /></button> </div> <div className="flex-1 flex justify-center"><div className="w-12 h-1.5 bg-gray-300 rounded-full group-hover:bg-blue-400 transition-colors" /></div> <button onClick={(e) => { e.stopPropagation(); onRemove(id); }} className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> </button> </div> <div className="flex-1 relative overflow-hidden flex flex-col custom-scrollbar">{children}</div> <div className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize flex items-end justify-end p-1 opacity-0 hover:opacity-100 transition-opacity bg-gradient-to-tl from-gray-100 to-transparent z-10" onMouseDown={handleResizeStart}> <Maximize2 size={16} className="text-gray-400 transform rotate-90" /> </div> </div>);
+      return (<div className={`absolute flex flex-col bg-white rounded-xl shadow-xl overflow-hidden border-2 transition-shadow duration-200 pointer-events-auto ${isSelected ? 'border-blue-500 shadow-2xl' : 'border-transparent border-gray-100'}`} style={{ left: position.x, top: position.y, width: size.width, height: size.height, zIndex: isSelected ? 9999 : (zIndex + 100), touchAction: 'none' }} onMouseDown={() => { if (!isSelected) onSelect(id); }}> <div className="h-8 bg-gray-50 flex items-center justify-between px-2 cursor-move border-b border-gray-100 group select-none flex-shrink-0" onMouseDown={handleMouseDown}> <div className="flex items-center gap-1"> <button onClick={(e) => { e.stopPropagation(); onFontSizeChange?.(-2); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"><Minus size={14} strokeWidth={3} /></button> <button onClick={(e) => { e.stopPropagation(); onFontSizeChange?.(2); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"><Plus size={14} strokeWidth={3} /></button> </div> <div className="flex-1 flex justify-center"><div className="w-12 h-1.5 bg-gray-300 rounded-full group-hover:bg-blue-400 transition-colors" /></div> <button onClick={(e) => { e.stopPropagation(); onRemove(id); }} className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> </button> </div> <div className="flex-1 relative overflow-hidden flex flex-col custom-scrollbar">{children}</div> <div className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize flex items-end justify-end p-1 opacity-0 hover:opacity-100 transition-opacity bg-gradient-to-tl from-gray-100 to-transparent z-10" onMouseDown={handleResizeStart}> <Maximize2 size={16} className="text-gray-400 transform rotate-90" /> </div> </div>);
     };
     const TimerWidget = ({ widget, updateData }) => {
-      const { durationMinutes = 2, timeLeft = 120, isRunning = false, fontSize = 16, mode = 'digital', color = 'blue', isMuted = false } = widget.data;
+      const { durationMinutes = 2, timeLeft = 120, isRunning = false, fontSize = 16, mode = 'visual', color = 'blue', isMuted = false } = widget.data;
       const [customTime, setCustomTime] = useState("");
+      const [showColorMenu, setShowColorMenu] = useState(false);
       const intervalRef = useRef(null);
       const isDraggingRef = useRef(false);
       const timerRef = useRef(null);
@@ -530,10 +546,23 @@
 
       return (
         <div className="flex flex-col items-center justify-between h-full p-2 relative bg-white select-none group">
-          <div className="absolute top-2 left-2 flex gap-1 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
-            {Object.keys(COLORS).map(c => (
-              <button key={c} onClick={() => updateData(widget.id, { color: c })} className={`w-3 h-3 rounded-full ${COLORS[c].bg} ${color === c ? 'ring-2 ring-slate-400' : ''}`} />
-            ))}
+          <div className="absolute top-2 left-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => setShowColorMenu(!showColorMenu)}
+              className={`w-6 h-6 rounded-full ${COLORS[color].bg} ring-2 ring-white shadow-sm hover:scale-110 transition-transform`}
+              title="Change Color"
+            />
+            {showColorMenu && (
+              <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 p-2 flex flex-col gap-2 z-50 animate-in fade-in slide-in-from-top-2">
+                {Object.keys(COLORS).map(c => (
+                  <button
+                    key={c}
+                    onClick={() => { updateData(widget.id, { color: c }); setShowColorMenu(false); }}
+                    className={`w-5 h-5 rounded-full ${COLORS[c].bg} ${color === c ? 'ring-2 ring-slate-400' : ''} hover:scale-110 transition-transform`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
           <button onClick={() => updateData(widget.id, { mode: mode === 'digital' ? 'visual' : 'digital' })} className="absolute top-2 right-2 p-1.5 text-gray-300 hover:text-blue-600 rounded-full hover:bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity z-20" title="Switch Mode"><Clock size={16} /></button>
 
@@ -1356,8 +1385,24 @@
       };
 
       const addItem = () => {
-        const newItem = { id: Date.now().toString(), time: '09:00', emoji: '📚', title: 'New Activity', description: '' };
-        const newItems = [...scheduleData, newItem].sort((a, b) => parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time));
+        // New item time defaults to 9 AM, but place at end of list
+        // Or default it to whatever is last + 1 hour? Let's just default to end of list without sorting.
+        // And maybe default time is "Next hour"?
+        // User asked: "consistent about where it puts a new schedule item... go to the bottom of the list"
+        // Previous behavior: sorted by time.
+        // New behavior: Append to bottom. User must manually sort/manage time.
+        // Or... sorting by time is GOOD for a schedule. Maybe they mean if they add at 3PM it jumps up?
+        // "I edit the time, it doesn't recenter to display properly" -> centering issue.
+        // "I would expect the new one to go to the bottom".
+        // If I disable sorting, then order is manual? Drag/drop already exists.
+        // So I will REMOVE the sort in addItem.
+        const newItem = { id: Date.now().toString(), time: '', emoji: '📚', title: 'New Activity', description: '' };
+        // We append. If time is empty, it stays at bottom or top depending on sort?
+        // If sort is active in render/save, removing sort here doesn't help.
+        // Wait, saveScheduleData saves items.
+        // updateItem logic: doesn't re-sort.
+        // addItem logic previously had `.sort(...)`. I will remove `.sort`.
+        const newItems = [...scheduleData, newItem];
         saveScheduleData(newItems);
       };
 
@@ -1412,14 +1457,13 @@
                     className={`relative group flex gap-2 p-2 rounded-lg border transition-all cursor-move ${isCurrent ? 'bg-indigo-100 border-indigo-400 ring-2 ring-indigo-300' : 'bg-white border-gray-200 hover:border-indigo-200'}`}
                   >
                     {isCurrent && <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />}
-                    <div className="flex flex-col items-center shrink-0 w-14">
+                    <div className="flex flex-col items-center shrink-0 w-28"> {/* WIDENED from w-20 to w-28 */}
                       <input
                         type="time"
-                        value={item.time || '09:00'}
+                        value={item.time || ''}
                         onChange={(e) => updateItem(index, 'time', e.target.value)}
-                        className="w-full text-[10px] font-bold text-indigo-600 bg-transparent border-none text-center cursor-pointer"
+                        className="w-full text-xs font-bold text-indigo-600 bg-transparent border-none text-center cursor-pointer" // Increased text size slightly
                       />
-                      <span className="text-[10px] text-gray-400">{formatTime(item.time)}</span>
                     </div>
                     <div className="relative flex items-center text-xl shrink-0">
                       <div
@@ -1527,6 +1571,7 @@
       const [feedbackName, setFeedbackName] = useState('');
       const [feedbackEmail, setFeedbackEmail] = useState('');
       const [feedbackMessage, setFeedbackMessage] = useState('');
+      const [feedbackCopied, setFeedbackCopied] = useState(false);
 
       const toggleActive = (id) => {
         setLocalRoster(prev => prev.map(s => s.id === id ? { ...s, active: !s.active } : s));
@@ -1551,6 +1596,20 @@
         const subject = encodeURIComponent('HomeRoom Feedback');
         const body = encodeURIComponent(`Name: ${feedbackName}\nEmail: ${feedbackEmail}\n\nMessage:\n${feedbackMessage}`);
         window.location.href = `mailto:jeffhennigar@gmail.com?subject=${subject}&body=${body}`;
+      };
+
+      const handleGmailSubmit = () => {
+        const subject = encodeURIComponent('HomeRoom Feedback');
+        const body = encodeURIComponent(`Name: ${feedbackName}\nEmail: ${feedbackEmail}\n\nMessage:\n${feedbackMessage}`);
+        window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=jeffhennigar@gmail.com&su=${subject}&body=${body}`, '_blank');
+      };
+
+      const handleCopyFeedback = () => {
+        const text = `To: jeffhennigar@gmail.com\nSubject: HomeRoom Feedback\n\nName: ${feedbackName}\nEmail: ${feedbackEmail}\n\nMessage:\n${feedbackMessage}`;
+        navigator.clipboard.writeText(text).then(() => {
+          setFeedbackCopied(true);
+          setTimeout(() => setFeedbackCopied(false), 2000);
+        });
       };
 
       // Schedule template state
@@ -1589,7 +1648,7 @@
 
       return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+          <div className="bg-white rounded-2xl shadow-2xl w-[600px] h-[600px] flex flex-col overflow-hidden relative">
             {/* Header with Tabs */}
             <div className="border-b">
               <div className="p-4 flex justify-between items-center">
@@ -1804,9 +1863,24 @@
                       <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Message</label>
                       <textarea value={feedbackMessage} onChange={e => setFeedbackMessage(e.target.value)} className="w-full border-2 border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 transition-colors resize-none" rows={4} placeholder="Your feedback or question..." />
                     </div>
-                    <button onClick={handleFeedbackSubmit} disabled={!feedbackMessage.trim()} className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
-                      <Mail size={18} /> Send Feedback
-                    </button>
+
+                    <div className="flex flex-col gap-2">
+                      <button onClick={handleFeedbackSubmit} disabled={!feedbackMessage.trim()} className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                        <Mail size={18} /> Send via Email App
+                      </button>
+
+                      <div className="flex gap-2">
+                        <button onClick={handleGmailSubmit} disabled={!feedbackMessage.trim()} className="flex-1 py-3 bg-red-100 hover:bg-red-200 disabled:bg-gray-100 disabled:text-gray-400 text-red-700 font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                          <Mail size={18} /> Send via Gmail
+                        </button>
+                        <button onClick={handleCopyFeedback} disabled={!feedbackMessage.trim()} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-300 text-gray-700 font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                          {feedbackCopied ? <Check size={18} className="text-green-600" /> : <List size={18} />} {feedbackCopied ? 'Copied!' : 'Copy Text'}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-gray-400 text-center mt-2">
+                      If "Send" doesn't work, use "Copy Text" and paste it into your email manually to <b>jeffhennigar@gmail.com</b>
+                    </p>
                   </div>
                 </div>
               )}
@@ -1875,7 +1949,7 @@
         return () => document.removeEventListener('mousedown', handleClickOutside);
       }, [showMoreDrawer]);
 
-      const handleDockDrop = (e, targetLocation) => {
+      const handleDockDrop = (e, targetLocation, targetId = null) => {
         e.preventDefault();
         const widgetType = e.dataTransfer.getData('widgetType');
         if (!widgetType) return;
@@ -1884,18 +1958,34 @@
         if (dockOrder.drawer.includes(widgetType)) sourceLocation = 'drawer';
         else if (!dockOrder.main.includes(widgetType)) return;
 
-        if (sourceLocation === targetLocation) {
-          return;
-        }
+        // If dropping onto itself, do nothing
+        if (widgetType === targetId) return;
 
         setDockOrder(prev => {
+          // Remove from old lists
           const newMain = prev.main.filter(id => id !== widgetType);
           const newDrawer = prev.drawer.filter(id => id !== widgetType);
 
-          if (targetLocation === 'main') {
-            return { main: [...newMain, widgetType], drawer: newDrawer };
+          // Prepare target list
+          let targetList = targetLocation === 'main' ? [...newMain] : [...newDrawer];
+
+          if (targetId) {
+            // Insert BEFORE the targetId
+            const targetIndex = targetList.indexOf(targetId);
+            if (targetIndex !== -1) {
+              targetList.splice(targetIndex, 0, widgetType);
+            } else {
+              targetList.push(widgetType); // Fallback
+            }
           } else {
-            return { main: newMain, drawer: [...newDrawer, widgetType] };
+            // Append to end
+            targetList.push(widgetType);
+          }
+
+          if (targetLocation === 'main') {
+            return { main: targetList, drawer: newDrawer };
+          } else {
+            return { main: newMain, drawer: targetList };
           }
         });
       };
@@ -1976,6 +2066,19 @@
               e.dataTransfer.setData('widgetType', id);
               if (location === 'drawer') setShowMoreDrawer(false);
             }}
+            onDragOver={(e) => {
+              if (!isDockLocked) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
+            onDrop={(e) => {
+              if (!isDockLocked) {
+                e.preventDefault();
+                e.stopPropagation();
+                handleDockDrop(e, location, id);
+              }
+            }}
             onClick={() => {
               const widget = {
                 id: Date.now().toString(),
@@ -2053,8 +2156,8 @@
             </button>
           </div>
 
-          {/* Widgets Area - UPDATED Z-INDEX TO 30 TO BE ABOVE CLOCK (z-20) */}
-          <div className="absolute inset-0 z-30">{widgets.map(w => (<DraggableResizable key={w.id} id={w.id} position={w.position} size={w.size} zIndex={w.zIndex} isSelected={selectedId === w.id} onSelect={bringToFront} onUpdate={updateWidgetLayout} onRemove={removeWidget} onFontSizeChange={(d) => updateWidgetData(w.id, { fontSize: Math.max(8, (w.data.fontSize || 16) + d) })}>{renderWidgetContent(w)}</DraggableResizable>))}</div>
+          {/* Widgets Area - UPDATED Z-INDEX TO 30 TO BE ABOVE CLOCK (z-20) - AND POINTER EVENTS NONE */}
+          <div className="absolute inset-0 z-30 pointer-events-none">{widgets.map(w => (<DraggableResizable key={w.id} id={w.id} position={w.position} size={w.size} zIndex={w.zIndex} isSelected={selectedId === w.id} onSelect={bringToFront} onUpdate={updateWidgetLayout} onRemove={removeWidget} onFontSizeChange={(d) => updateWidgetData(w.id, { fontSize: Math.max(8, (w.data.fontSize || 16) + d) })}>{renderWidgetContent(w)}</DraggableResizable>))}</div>
 
           {/* Slide Controls */}
           <div className="absolute bottom-6 right-8 z-50 flex items-center pointer-events-none"><div className="pointer-events-auto flex items-center gap-0.5 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-1 border border-white/60 ring-1 ring-black/5"><button onClick={prevSlide} disabled={currentSlideIndex === 0} className="p-1.5 hover:bg-blue-50 rounded-xl text-gray-500 hover:text-blue-600 transition-all duration-200 disabled:opacity-20 group active:scale-95"><ChevronLeft size={20} /></button><div className="px-2 flex items-center justify-center min-w-[35px]"><span className="text-[10px] font-bold text-blue-600 leading-none">{currentSlideIndex + 1} / {slides.length}</span></div><button onClick={nextSlide} className="p-1.5 hover:bg-blue-50 rounded-xl text-gray-500 hover:text-blue-600 transition-all duration-200 group active:scale-95 flex items-center justify-center">{currentSlideIndex === slides.length - 1 ? <Plus size={20} /> : <ChevronRight size={20} />}</button></div></div>
@@ -2133,6 +2236,13 @@
                   title={isDockLocked ? "Unlock Dock to Rearrange" : "Lock Dock"}
                 >
                   {isDockLocked ? <Lock size={16} /> : <Unlock size={16} />}
+                </button>
+                <button
+                  onClick={() => { setShowSettingsModal(true); setSettingsInitialTab('roster'); }}
+                  className="p-3 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                  title="Settings"
+                >
+                  <Settings size={20} />
                 </button>
               </div>
             </div>
