@@ -7,10 +7,16 @@
   <title>HomeRoom</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Poppins', sans-serif;
       overflow: hidden;
+    }
+
+    /* Ensure consistent emoji rendering across all systems */
+    .emoji {
+      font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
     }
 
     .custom-scrollbar::-webkit-scrollbar {
@@ -76,14 +82,14 @@
     import { createRoot } from 'react-dom/client';
     import {
       Mic, Eraser, Timer, Shuffle, Users, Type, Armchair,
-      Camera, Dices, ChevronDown, ChevronUp,
+      Camera, Dices, ChevronDown, ChevronUp, Copy,
       Maximize2, GripHorizontal, Minus, Plus, Pause, Play, RotateCcw,
       Settings, CheckSquare, Square, RefreshCw, GripVertical, Trash2,
       Wand2, CameraOff, FlipHorizontal, X, Bold, List, ChevronLeft, ChevronRight,
       Save, AlertCircle, Share2, Edit3, Layout, User, MoreVertical, MoreHorizontal, Briefcase,
       RotateCw, Lock, Unlock, Grip, Palette, Image as ImageIcon, UploadCloud,
       Sun, Moon, BarChart2, Italic, Underline, AlignLeft, Clock, Smile,
-      Volume2, VolumeX, Download, Upload, Check, Info, ExternalLink, Mail, Calendar, Youtube, Lightbulb, MousePointer2, Undo2, Redo2, ArrowRightSquare
+      Volume2, VolumeX, Download, Upload, Check, Info, ExternalLink, Mail, Calendar, Youtube, Lightbulb, MousePointer2, Undo2, Redo2, ArrowRightSquare, QrCode
     } from 'lucide-react';
 
     // --- CONSTANTS ---
@@ -97,7 +103,7 @@
       yellow: 'bg-yellow-50 border-yellow-400'
     };
 
-    const INIT_DOCK_ORDER = ['NOISE', 'TIMER', 'RANDOMIZER', 'GROUP_MAKER', 'SEAT_PICKER', 'SCHEDULE', 'TEXT', 'TRAFFIC', 'QR', 'WEBCAM', 'DICE', 'VOTE', 'WHITEBOARD'];
+    const INIT_DOCK_ORDER = ['TIMER', 'RANDOMIZER', 'GROUP_MAKER', 'SEAT_PICKER', 'SCHEDULE', 'TEXT', 'TRAFFIC', 'QR', 'WEBCAM', 'DICE', 'VOTE', 'WHITEBOARD', 'YOUTUBE'];
     const TrafficLightIcon = () => (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="7" y="2" width="10" height="20" rx="4" />
@@ -108,7 +114,6 @@
     );
 
     const DOCK_LABELS = {
-      NOISE: { label: 'Noise Meter', icon: <Mic size={24} /> },
       TIMER: { label: 'Timer', icon: <Timer /> },
       RANDOMIZER: { label: 'Random', icon: <Shuffle /> },
       GROUP_MAKER: { label: 'Groups', icon: <Users /> },
@@ -181,7 +186,7 @@
     };
 
     const WIDGET_SIZES = {
-      NOISE: { width: 330, height: 420 },
+
       TIMER: { width: 280, height: 340 },
       RANDOMIZER: { width: 250, height: 250 },
       GROUP_MAKER: { width: 600, height: 400 },
@@ -189,189 +194,279 @@
       TEXT: { width: 340, height: 260 },
       WEBCAM: { width: 320, height: 240 },
       DICE: { width: 300, height: 320 },
-      TRAFFIC: { width: 140, height: 320 },
+      TRAFFIC: { width: 220, height: 320 },
       QR: { width: 250, height: 280 },
       VOTE: { width: 400, height: 350 },
       WHITEBOARD: { width: 500, height: 400 },
-      WHITEBOARD: { width: 500, height: 400 },
+
       SCHEDULE: { width: 380, height: 500 },
       YOUTUBE: { width: 480, height: 360 }
     };
 
     // --- COMPONENTS ---
+    // SeatPickerWidget rewritten for Multi-Select and Random Empty Seats
     const SeatPickerWidget = ({ widget, updateData, roster, onUpdateRoster }) => {
-      const { desks = [], isEditing = false, fontSize = 16 } = widget.data; const containerRef = useRef(null); const [draggedDesk, setDraggedDesk] = useState(null); const [rotatingDesk, setRotatingDesk] = useState(null); const dragStart = useRef({ x: 0, y: 0 });
-      useEffect(() => { const allStudentNames = roster.map(s => s.name); let currentDesks = Array.isArray(desks) ? [...desks] : []; let needsUpdate = false; const seated = currentDesks.map(d => d.student).filter(Boolean); const unseated = allStudentNames.filter(name => !seated.includes(name)); if (unseated.length > 0) { needsUpdate = true; currentDesks = currentDesks.map(d => { if (d.type !== "teacher" && !d.student && unseated.length > 0) { return { ...d, student: unseated.shift() }; } return d; }); for (var i = 0; i < unseated.length; i++) { currentDesks.push({ id: Date.now() + Math.random(), x: 50 + (i % 5) * 110, y: 50 + Math.floor(i / 5) * 80 + 100, student: unseated[i], color: "blue", type: "student", rotation: 0 }); } } if (needsUpdate) { updateData(widget.id, { desks: currentDesks }); } }, [roster, widget.id]);
-      const toggleAbsence = (studentName, e) => { if (e) { e.preventDefault(); e.stopPropagation(); } if (!studentName || !onUpdateRoster) return; const updated = roster.map(s => s.name === studentName ? { ...s, active: !s.active } : s); onUpdateRoster(updated); };
-      const handleMouseDown = (e, deskId) => { if (!isEditing) return; e.stopPropagation(); setDraggedDesk(deskId); dragStart.current = { x: e.clientX, y: e.clientY }; };
-      const handleRotateMouseDown = (e, deskId) => { if (!isEditing) return; e.stopPropagation(); setRotatingDesk(deskId); };
-      const handleGlobalMouseMove = (e) => { if (draggedDesk && isEditing) { e.stopPropagation(); e.preventDefault(); const dx = e.clientX - dragStart.current.x; const dy = e.clientY - dragStart.current.y; dragStart.current = { x: e.clientX, y: e.clientY }; updateData(widget.id, { desks: desks.map(d => { if (d.id === draggedDesk) return { ...d, x: d.x + dx, y: d.y + dy }; return d; }) }); } else if (rotatingDesk && isEditing) { e.preventDefault(); const desk = desks.find(d => d.id === rotatingDesk); if (desk && containerRef.current) { const rect = containerRef.current.getBoundingClientRect(); const deskCenterX = rect.left + desk.x + (desk.type === "teacher" ? 80 : 56); const deskCenterY = rect.top + desk.y + (desk.type === "teacher" ? 40 : 32); const angle = Math.atan2(e.clientY - deskCenterY, e.clientX - deskCenterX) * (180 / Math.PI); updateData(widget.id, { desks: desks.map(d => { if (d.id === rotatingDesk) return { ...d, rotation: angle + 45 }; return d; }) }); } } };
-      const handleGlobalMouseUp = () => { setDraggedDesk(null); setRotatingDesk(null); };
-      useEffect(() => { if (isEditing) { window.addEventListener("mousemove", handleGlobalMouseMove); window.addEventListener("mouseup", handleGlobalMouseUp); return () => { window.removeEventListener("mousemove", handleGlobalMouseMove); window.removeEventListener("mouseup", handleGlobalMouseUp); }; } }, [isEditing, draggedDesk, rotatingDesk, desks]);
-      const addDesk = (color = "blue", type = "student") => { const newDesk = { id: Date.now().toString(), x: 50, y: 50, student: null, color, type, rotation: 0 }; updateData(widget.id, { desks: [...desks, newDesk] }); };
-      const removeDesk = (id) => updateData(widget.id, { desks: desks.filter(d => d.id !== id) });
-      const shuffleSeats = () => { const activeStudentNames = roster.filter(s => s.active).map(s => s.name); if (activeStudentNames.length === 0) { alert("No active students in roster!"); return; } const shuffled = [...activeStudentNames].sort(() => Math.random() - 0.5); let studentIdx = 0; const newDesks = desks.map((desk) => { if (desk.type === "teacher") return desk; const student = shuffled[studentIdx] || null; studentIdx++; return { ...desk, student }; }); updateData(widget.id, { desks: newDesks }); };
-      return (<div className="flex flex-col h-full bg-slate-50 relative overflow-hidden">          <div className="h-12 bg-white border-b flex items-center justify-between px-4 z-10 shrink-0">            <h3 className="font-bold text-slate-700 flex items-center gap-2"><Layout size={18} /> Class Layout</h3>            <div className="flex gap-2">              {isEditing ? (<>                  <div className="flex bg-gray-100 rounded-lg p-0.5 mr-2">                    {["blue", "red", "green", "yellow"].map(c => (<button key={c} onClick={() => addDesk(c)} className={`w-6 h-6 rounded border m-0.5 hover:scale-110 transition-transform ${DESK_COLORS[c].split(" ")[0]} ${DESK_COLORS[c].split(" ")[1]}`} />))}                    <button onClick={() => addDesk("gray", "teacher")} className="px-2 h-6 rounded bg-slate-600 text-[10px] m-0.5 text-white font-bold flex items-center gap-1 hover:scale-105 transition-transform"><Briefcase size={10} /> Teacher</button>                  </div>                  <button onClick={() => updateData(widget.id, { isEditing: false })} className="px-3 py-1 bg-green-600 text-white rounded text-xs font-bold shadow hover:bg-green-700">Done</button>                </>) : (<>                  <button onClick={shuffleSeats} className="px-3 py-1 bg-indigo-600 text-white rounded text-xs font-bold shadow hover:bg-indigo-700 flex items-center gap-1"><Shuffle size={12} /> Shuffle</button>                  <button onClick={() => updateData(widget.id, { isEditing: true })} className="px-3 py-1 bg-white border border-gray-300 text-gray-600 rounded text-xs font-bold hover:bg-gray-50 flex items-center gap-1"><Edit3 size={12} /> Edit</button>                </>)}            </div>          </div>          <div ref={containerRef} className={`flex-1 relative overflow-hidden ${isEditing ? "bg-slate-100" : "bg-slate-50"}`} style={{ backgroundImage: isEditing ? "radial-gradient(#cbd5e1 1px, transparent 1px)" : "none", backgroundSize: "20px 20px" }}>            {desks.map(desk => { const isAbsent = desk.student && roster.find(s => s.name === desk.student && !s.active); const styleClass = desk.type === "teacher" ? "bg-slate-800 border-slate-600 text-white shadow-lg w-28 h-14 rounded-md" : `${DESK_COLORS[desk.color || "blue"]} w-20 h-11 rounded-lg`; return (<div key={desk.id} onContextMenu={(e) => toggleAbsence(desk.student, e)} className={`absolute shadow-sm border-2 flex items-center justify-center transition-shadow ${isEditing ? "cursor-move hover:shadow-md" : "cursor-pointer"} ${styleClass} ${isAbsent ? "opacity-60" : ""}`} style={{ left: desk.x, top: desk.y, transform: `rotate(${desk.rotation || 0}deg)` }} onMouseDown={(e) => handleMouseDown(e, desk.id)} >                  {isAbsent && <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full z-30 shadow-sm">OUT</div>}                  {isEditing && (<>                      <button onClick={(e) => { e.stopPropagation(); removeDesk(desk.id); }} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 shadow-sm hover:bg-red-600 w-5 h-5 flex items-center justify-center z-20"><X size={12} strokeWidth={3} /></button>                      <div onMouseDown={(e) => handleRotateMouseDown(e, desk.id)} className="absolute -top-3 -left-3 bg-blue-500 text-white rounded-full p-1 shadow-sm hover:bg-blue-600 w-6 h-6 flex items-center justify-center z-20 cursor-grab active:cursor-grabbing"><RotateCw size={14} strokeWidth={2.5} /></div>                    </>)}                  {desk.type === "teacher" ? <div className="flex flex-col items-center opacity-80"><Briefcase size={16} className="mb-0.5" /><span className="text-[8px] uppercase font-bold tracking-widest">Teacher</span></div> : (desk.student ? <span className={`font-bold text-center px-0.5 truncate w-full text-[11px] ${isAbsent ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{desk.student}</span> : <span className={`italic text-[10px] ${desk.color === "yellow" ? "text-yellow-700/50" : "text-slate-300"}`}>Empty</span>)}                  {desk.type !== "teacher" && <div className={`absolute -bottom-1 w-8 h-1 rounded-full ${desk.color === "yellow" ? "bg-yellow-200" : "bg-slate-200"}`} />}                </div>); })}          </div>        </div>);
-    };
+      const { desks = [], isEditing = false, snapToGrid = 0, fontSize = 16 } = widget.data;
+      const containerRef = useRef(null);
 
-    const NoiseMeterWidget = ({ widget, updateData }) => {
-      const { isListening = false, threshold = 80, fontSize = 16 } = widget.data;
-      const audioContextRef = useRef(null);
-      const analyserRef = useRef(null);
-      const dataArrayRef = useRef(null);
-      const rafId = useRef(null);
-      const barRef = useRef(null);
-      const sadSoundCooldown = useRef(false);
-      // We keep 'status' in state for fluid UI updates, but also sync critical changes (RED) to data
-      const [currentStatus, setCurrentStatus] = useState('green');
+      const [draggedDesk, setDraggedDesk] = useState(null);
+      const [rotatingDesk, setRotatingDesk] = useState(null);
+      const [selectedDeskIds, setSelectedDeskIds] = useState([]); // Array for multi-select
+
+      // Selection Box State
+      const [isSelecting, setIsSelecting] = useState(false);
+      const [selectionBox, setSelectionBox] = useState(null); // { x, y, w, h } relative to container
+
+      const dragStartMouse = useRef({ x: 0, y: 0 });
+      const initialDeskPositions = useRef({});
+
+      // Roster Sync
+      useEffect(() => {
+        const allStudentNames = roster.map(s => s.name);
+        let currentDesks = Array.isArray(desks) ? [...desks] : [];
+        let needsUpdate = false;
+
+        // Ensure students are seated or new desks created
+        const seated = currentDesks.map(d => d.student).filter(Boolean);
+        const unseated = allStudentNames.filter(name => !seated.includes(name));
+
+        if (unseated.length > 0) {
+          needsUpdate = true;
+          // Fill empty spots first
+          currentDesks = currentDesks.map(d => {
+            if (d.type !== "teacher" && !d.student && unseated.length > 0) { return { ...d, student: unseated.shift() }; }
+            return d;
+          });
+          // Create new desks for remaining
+          for (var i = 0; i < unseated.length; i++) {
+            currentDesks.push({ id: Date.now() + Math.random(), x: 50 + (i % 5) * 110, y: 50 + Math.floor(i / 5) * 80 + 100, student: unseated[i], color: "blue", type: "student", rotation: 0 });
+          }
+        }
+        if (needsUpdate) updateData(widget.id, { desks: currentDesks });
+      }, [roster, widget.id]);
+
+      const toggleAbsence = (studentName, e) => { if (e) { e.preventDefault(); e.stopPropagation(); } if (!studentName || !onUpdateRoster) return; const updated = roster.map(s => s.name === studentName ? { ...s, active: !s.active } : s); onUpdateRoster(updated); };
+
+      const handleMouseDown = (e, deskId) => {
+        if (!isEditing) return;
+        e.stopPropagation();
+
+        let newSelection = [...selectedDeskIds];
+        if (e.ctrlKey || e.metaKey) {
+          if (newSelection.includes(deskId)) newSelection = newSelection.filter(id => id !== deskId);
+          else newSelection.push(deskId);
+        } else {
+          if (!newSelection.includes(deskId)) newSelection = [deskId];
+        }
+
+        setSelectedDeskIds(newSelection);
+        setDraggedDesk(deskId);
+
+        // Capture initial state for drag
+        dragStartMouse.current = { x: e.clientX, y: e.clientY };
+        const initialPos = {};
+        desks.forEach(d => { initialPos[d.id] = { x: d.x, y: d.y }; });
+        initialDeskPositions.current = initialPos;
+      };
+
+      const handleBgMouseDown = (e) => {
+        if (!isEditing) { setSelectedDeskIds([]); return; }
+        if (e.target !== containerRef.current) return;
+        setSelectedDeskIds([]);
+        const rect = containerRef.current.getBoundingClientRect();
+        setIsSelecting(true);
+        setSelectionBox({ startX: e.nativeEvent.offsetX, startY: e.nativeEvent.offsetY, x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY, w: 0, h: 0 });
+      };
+
+      const handleRotateMouseDown = (e, deskId) => { if (!isEditing) return; e.stopPropagation(); setRotatingDesk(deskId); };
+
+      const handleGlobalMouseMove = (e) => {
+        if (isSelecting && selectionBox) {
+          const rect = containerRef.current.getBoundingClientRect();
+          const currentX = e.clientX - rect.left;
+          const currentY = e.clientY - rect.top;
+          const x = Math.min(selectionBox.startX, currentX);
+          const y = Math.min(selectionBox.startY, currentY);
+          const w = Math.abs(currentX - selectionBox.startX);
+          const h = Math.abs(currentY - selectionBox.startY);
+          setSelectionBox(prev => ({ ...prev, x, y, w, h }));
+        }
+        else if (draggedDesk && isEditing) {
+          e.stopPropagation(); e.preventDefault();
+          const totalDx = e.clientX - dragStartMouse.current.x;
+          const totalDy = e.clientY - dragStartMouse.current.y;
+
+          // Calculate "Leader" new position (the one we clicked)
+          const leaderStart = initialDeskPositions.current[draggedDesk];
+          if (!leaderStart) return;
+
+          let rawNewX = leaderStart.x + totalDx;
+          let rawNewY = leaderStart.y + totalDy;
+
+          // Snap the leader
+          let finalLeaderX = rawNewX;
+          let finalLeaderY = rawNewY;
+
+          if (snapToGrid > 0) {
+            finalLeaderX = Math.round(rawNewX / snapToGrid) * snapToGrid;
+            finalLeaderY = Math.round(rawNewY / snapToGrid) * snapToGrid;
+          }
+
+          // Calculate effective delta to apply to all selected items
+          const effectiveDx = finalLeaderX - leaderStart.x;
+          const effectiveDy = finalLeaderY - leaderStart.y;
+
+          updateData(widget.id, {
+            desks: desks.map(d => {
+              if (selectedDeskIds.includes(d.id)) {
+                const start = initialDeskPositions.current[d.id];
+                if (!start) return d;
+                return { ...d, x: start.x + effectiveDx, y: start.y + effectiveDy };
+              }
+              return d;
+            })
+          });
+        }
+        else if (rotatingDesk && isEditing) {
+          e.preventDefault();
+          const desk = desks.find(d => d.id === rotatingDesk);
+          if (desk && containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const deskCenterX = rect.left + desk.x + (desk.type === "teacher" ? 80 : 56);
+            const deskCenterY = rect.top + desk.y + (desk.type === "teacher" ? 40 : 32);
+            const angle = Math.atan2(e.clientY - deskCenterY, e.clientX - deskCenterX) * (180 / Math.PI);
+            updateData(widget.id, { desks: desks.map(d => { if (d.id === rotatingDesk) return { ...d, rotation: angle + 45 }; return d; }) });
+          }
+        }
+      };
+
+      const handleGlobalMouseUp = () => {
+        if (isSelecting && selectionBox) {
+          // Commit selection
+          const { x, y, w, h } = selectionBox;
+          const selected = desks.filter(d => {
+            // Simple center point collision
+            const cx = d.x + (d.type === 'teacher' ? 40 : 28);
+            const cy = d.y + (d.type === 'teacher' ? 20 : 16);
+            return cx >= x && cx <= x + w && cy >= y && cy <= y + h;
+          }).map(d => d.id);
+          setSelectedDeskIds(selected);
+          setIsSelecting(false);
+          setSelectionBox(null);
+        }
+        setDraggedDesk(null);
+        setRotatingDesk(null);
+        setIsSelecting(false); // Cleanup just in case
+      };
 
       useEffect(() => {
-        if (isListening) startAudio();
-        else stopAudio();
-        return () => stopAudio();
-      }, [isListening]);
+        if (isEditing) {
+          window.addEventListener("mousemove", handleGlobalMouseMove);
+          window.addEventListener("mouseup", handleGlobalMouseUp);
+          return () => {
+            window.removeEventListener("mousemove", handleGlobalMouseMove);
+            window.removeEventListener("mouseup", handleGlobalMouseUp);
+          };
+        }
+      }, [isEditing, draggedDesk, rotatingDesk, isSelecting, selectionBox, desks, snapToGrid]);
 
-      const playSadSound = () => {
-        if (sadSoundCooldown.current) return;
-        sadSoundCooldown.current = true;
-        setTimeout(() => sadSoundCooldown.current = false, 2000);
-
-        try {
-          const ctx = new (window.AudioContext || window.webkitAudioContext)();
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(400, ctx.currentTime);
-          osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.6); // "Sad" slide
-          gain.gain.setValueAtTime(0.2, ctx.currentTime);
-          gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.6);
-
-          osc.start();
-          osc.stop(ctx.currentTime + 0.6);
-        } catch (e) { console.error("Audio Error", e); }
-      };
-
-      const startAudio = async () => {
-        if (audioContextRef.current) return;
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          audioContextRef.current = audioCtx;
-          const analyser = audioCtx.createAnalyser();
-          analyserRef.current = analyser;
-          const source = audioCtx.createMediaStreamSource(stream);
-          source.connect(analyser);
-          analyser.fftSize = 256;
-          const bufferLength = analyser.frequencyBinCount;
-          dataArrayRef.current = new Uint8Array(bufferLength);
-          analyze();
-        } catch (e) {
-          console.error(e);
-          alert('Mic Error: ' + e.message);
-          updateData(widget.id, { isListening: false });
+      const handleColorClick = (color) => {
+        if (selectedDeskIds.length > 0) {
+          updateData(widget.id, { desks: desks.map(d => selectedDeskIds.includes(d.id) ? { ...d, color } : d) });
+        } else {
+          const newDesk = { id: Date.now().toString(), x: 50, y: 50, student: null, color, type: 'student', rotation: 0 };
+          updateData(widget.id, { desks: [...desks, newDesk] });
         }
       };
 
-      const stopAudio = () => {
-        if (rafId.current) cancelAnimationFrame(rafId.current);
-        if (audioContextRef.current) {
-          audioContextRef.current.close();
-          audioContextRef.current = null;
-        }
-        if (barRef.current) barRef.current.style.height = '0%';
-        setCurrentStatus('green');
+      const addTeacher = () => {
+        const newDesk = { id: Date.now().toString(), x: 50, y: 50, student: null, color: "gray", type: "teacher", rotation: 0 };
+        updateData(widget.id, { desks: [...desks, newDesk] });
       };
 
-      const analyze = () => {
-        if (!analyserRef.current || !dataArrayRef.current) return;
-        analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+      const removeDesk = (id) => updateData(widget.id, { desks: desks.filter(d => d.id !== id) });
+      const removeSelected = () => {
+        updateData(widget.id, { desks: desks.filter(d => !selectedDeskIds.includes(d.id)) });
+        setSelectedDeskIds([]);
+      };
 
-        let sum = 0;
-        const data = dataArrayRef.current;
-        for (let i = 0; i < data.length; i++) sum += data[i];
-        const avg = sum / data.length; // 0-255 roughly
+      const shuffleSeats = () => {
+        const activeStudentNames = roster.filter(s => s.active).map(s => s.name);
+        if (activeStudentNames.length === 0) { alert("No active students in roster!"); return; }
 
-        // Normalize: typical speaking volume might be 30-100?
-        // We'll scale it a bit.
-        const volume = Math.min(avg * 1.5, 255);
-        const volPct = (volume / 255) * 100;
+        const studentDesks = desks.filter(d => d.type === 'student');
+        if (studentDesks.length === 0) return;
 
-        // Logic
-        // Threshold is user set 0-100.
-        // We map threshold to volume.
-        const limit = (threshold / 100) * 255;
+        // Create pool of "occupants": all active students + nulls for empty/remaining
+        let pool = [...activeStudentNames];
+        // If we have more desks than students, fill with nulls
+        while (pool.length < studentDesks.length) pool.push(null);
 
-        let newStatus = 'green';
-        if (volume > limit) newStatus = 'red';
-        else if (volume > limit * 0.7) newStatus = 'yellow';
+        // Shuffle the pool (students AND empty spots)
+        pool = pool.sort(() => Math.random() - 0.5);
 
-        if (newStatus === 'red' && currentStatus !== 'red') {
-          playSadSound();
-        }
+        let poolIndex = 0;
+        const newDesks = desks.map(d => {
+          if (d.type !== 'student') return d;
+          if (poolIndex < pool.length) {
+            const student = pool[poolIndex++];
+            return { ...d, student };
+          }
+          return { ...d, student: null };
+        });
 
-        setCurrentStatus(newStatus);
-
-        if (barRef.current) {
-          barRef.current.style.height = `${Math.min(volPct, 100)}%`;
-          barRef.current.style.backgroundColor = newStatus === 'red' ? '#ef4444' : newStatus === 'yellow' ? '#eab308' : '#22c55e';
-        }
-
-        rafId.current = requestAnimationFrame(analyze);
+        updateData(widget.id, { desks: newDesks });
       };
 
       return (
-        <div className={`h-full flex flex-col p-4 rounded-xl shadow-xl transition-all duration-300 overflow-hidden ${currentStatus === 'red' ? 'bg-red-50 border-4 border-red-500' : 'bg-white border border-slate-200'}`}>
-          <div className="flex justify-between items-center mb-2 shrink-0">
-            <div className="flex items-center gap-2">
-              <div className={`p-2 rounded-full ${isListening ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}>
-                {isListening ? <Mic size={20} /> : <Mic size={20} className="opacity-50" />}
-              </div>
-              <h3 className="font-bold text-slate-700 uppercase tracking-widest text-xs">Noise Meter</h3>
-            </div>
-            <button
-              onClick={() => updateData(widget.id, { isListening: !isListening })}
-              className={`px-4 py-2 rounded-lg font-bold text-xs transition-transform active:scale-95 shadow-lg ${isListening ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-            >
-              {isListening ? 'STOP' : 'START'}
-            </button>
-          </div>
-
-          <div className="flex-1 flex gap-4 min-h-0">
-            {/* Indicator Bar Container */}
-            <div className="flex-1 relative bg-slate-100 rounded-2xl overflow-hidden border border-slate-200">
-              {/* Threshold Line */}
-              <div
-                className="absolute w-full border-t-2 border-dashed border-slate-400 z-10 flex items-end justify-end px-1"
-                style={{ bottom: `${threshold}%` }}
-              >
-                <span className="text-[10px] font-bold text-slate-500 bg-white/80 px-1 rounded">MAX</span>
-              </div>
-
-              {/* Visual Bar */}
-              <div ref={barRef} className="absolute bottom-0 w-full bg-green-500 transition-all duration-75 ease-linear" style={{ height: '0%' }} />
-            </div>
-
-            {/* Right Controls (Slider) */}
-            <div className="w-12 flex flex-col items-center justify-center bg-slate-50 rounded-2xl border border-slate-100 py-4">
-              <input
-                type="range"
-                orient="vertical"
-                min="1"
-                max="100"
-                value={threshold}
-                onChange={(e) => updateData(widget.id, { threshold: Number(e.target.value) })}
-                className="h-full w-2 appearance-none bg-slate-200 rounded-full accent-blue-600 cursor-pointer slider-vertical"
-                style={{ writingMode: 'bt-lr', WebkitAppearance: 'slider-vertical' }}
-              />
-              <div className="mt-2 text-[10px] font-bold text-slate-400">{threshold}</div>
+        <div className="flex flex-col h-full bg-slate-50 relative overflow-hidden">
+          <div className="h-12 bg-white border-b flex items-center justify-between px-4 z-10 shrink-0">
+            <h3 className="font-bold text-slate-700 flex items-center gap-2"><Layout size={18} /> Class Layout</h3>
+            <div className="flex gap-2 items-center">
+              {isEditing ? (<>
+                <div className="flex items-center gap-2 mr-2">
+                  <button onClick={(e) => { e.stopPropagation(); updateData(widget.id, { snapToGrid: snapToGrid > 0 ? 0 : 10 }); }} className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition-colors mr-2 ${snapToGrid > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}>
+                    Snap: {snapToGrid > 0 ? 'On' : 'Off'}
+                  </button>
+                  <div className="w-px h-6 bg-gray-200" />
+                  <div className="flex bg-gray-100 rounded-lg p-0.5">
+                    {["blue", "red", "green", "yellow"].map(c => (<button key={c} onClick={(e) => { e.stopPropagation(); handleColorClick(c); }} className={`w-6 h-6 rounded border m-0.5 hover:scale-110 transition-transform ${DESK_COLORS[c].split(" ")[0]} ${DESK_COLORS[c].split(" ")[1]}`} />))}
+                    <button onClick={(e) => { e.stopPropagation(); addTeacher(); }} className="px-2 h-6 rounded bg-slate-600 text-[10px] m-0.5 text-white font-bold flex items-center gap-1 hover:scale-105 transition-transform"><Briefcase size={10} /> Teacher</button>
+                    {selectedDeskIds.length > 0 && <button onClick={removeSelected} className="px-2 h-6 rounded bg-red-100 text-red-600 text-[10px] m-0.5 font-bold flex items-center gap-1 hover:bg-red-200"><Trash2 size={10} /></button>}
+                  </div>
+                </div>
+                <button onClick={(e) => { e.stopPropagation(); updateData(widget.id, { isEditing: false }); setSelectedDeskIds([]); }} className="px-3 py-1 bg-green-600 text-white rounded text-xs font-bold shadow hover:bg-green-700">Done</button>
+              </>) : (<>
+                <button onClick={shuffleSeats} className="px-3 py-1 bg-indigo-600 text-white rounded text-xs font-bold shadow hover:bg-indigo-700 flex items-center gap-1"><Shuffle size={12} /> Shuffle</button>
+                <button onClick={() => updateData(widget.id, { isEditing: true })} className="px-3 py-1 bg-white border border-gray-300 text-gray-600 rounded text-xs font-bold hover:bg-gray-50 flex items-center gap-1"><Edit3 size={12} /> Edit</button>
+              </>)}
             </div>
           </div>
-        </div>
-      );
+          <div ref={containerRef} className={`flex-1 relative overflow-hidden ${isEditing ? "bg-slate-100" : "bg-slate-50"}`} style={{ backgroundImage: isEditing ? "radial-gradient(#cbd5e1 1px, transparent 1px)" : "none", backgroundSize: `${Math.max(20, snapToGrid || 20)}px ${Math.max(20, snapToGrid || 20)}px` }} onMouseDown={handleBgMouseDown}>
+            {desks.map(desk => {
+              const isAbsent = desk.student && roster.find(s => s.name === desk.student && !s.active);
+              const styleClass = desk.type === "teacher" ? "bg-slate-800 border-slate-600 text-white shadow-lg w-28 h-14 rounded-md" : `${DESK_COLORS[desk.color || "blue"]} w-20 h-11 rounded-lg`;
+              const isSelected = selectedDeskIds.includes(desk.id);
+              return (<div key={desk.id} onContextMenu={(e) => toggleAbsence(desk.student, e)} className={`absolute shadow-sm border-2 flex items-center justify-center transition-shadow ${isEditing ? "cursor-move hover:shadow-md" : "cursor-pointer"} ${styleClass} ${isAbsent ? "opacity-60" : ""} ${isSelected ? "ring-2 ring-blue-500 ring-offset-2 z-10" : ""}`} style={{ left: desk.x, top: desk.y, transform: `rotate(${desk.rotation || 0}deg)`, fontSize: (desk.type === 'teacher' ? 14 : fontSize) + 'px' }} onMouseDown={(e) => handleMouseDown(e, desk.id)} >
+                {isAbsent && <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full z-30 shadow-sm">OUT</div>}
+                {isEditing && (<>
+                  <button onClick={(e) => { e.stopPropagation(); removeDesk(desk.id); }} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 shadow-sm hover:bg-red-600 w-5 h-5 flex items-center justify-center z-20"><X size={12} strokeWidth={3} /></button>
+                  <div onMouseDown={(e) => handleRotateMouseDown(e, desk.id)} className="absolute -top-3 -left-3 bg-blue-500 text-white rounded-full p-1 shadow-sm hover:bg-blue-600 w-6 h-6 flex items-center justify-center z-20 cursor-grab active:cursor-grabbing"><RotateCw size={14} strokeWidth={2.5} /></div>
+                </>)}
+                {desk.type === "teacher" ? <div className="flex flex-col items-center opacity-80"><Briefcase size={16} className="mb-0.5" /><span className="text-[8px] uppercase font-bold tracking-widest">Teacher</span></div> : (desk.student ? <span className={`font-bold text-center px-0.5 truncate w-full text-[11px] ${isAbsent ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{desk.student}</span> : <span className={`italic text-[10px] ${desk.color === "yellow" ? "text-yellow-700/50" : "text-slate-300"}`}>Empty</span>)}
+                {desk.type !== "teacher" && <div className={`absolute -bottom-1 w-8 h-1 rounded-full ${desk.color === "yellow" ? "bg-yellow-200" : "bg-slate-200"}`} />}
+              </div>);
+            })}
+
+            {/* Selection Box Visual */}
+            {isSelecting && selectionBox && (
+              <div className="absolute border border-blue-500 bg-blue-500/10 pointer-events-none z-50" style={{ left: selectionBox.x, top: selectionBox.y, width: selectionBox.w, height: selectionBox.h }} />
+            )}
+          </div>
+        </div>);
     };
+
+
     const TextWidget = ({ widget, updateData }) => {
       const { items = [], content = "", mode = 'text', fontSize = 16, color = 'yellow' } = widget.data;
       const [newItemText, setNewItemText] = useState("");
@@ -434,13 +529,16 @@
       const toggleMode = () => {
         if (mode === 'text') {
           const tempDiv = document.createElement('div');
+          // Use innerText to get representative text, but be careful of duplication
           tempDiv.innerHTML = content || "";
-          const textContent = tempDiv.innerText || "";
-          // Fix: Split by newline and filter empty lines more robustly to prevent duplication
-          const newItems = textContent.split('\n').filter(line => line.trim().length > 0).map((text, i) => ({ id: Date.now() + i + '', text, completed: false }));
+          const rawText = tempDiv.innerText || "";
+          // Split by newline, trim, and remove empty lines
+          const validLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+          // Create items
+          const newItems = validLines.map((text, i) => ({ id: Date.now() + i + '', text, completed: false }));
+          // CRITICAL: Explicitly set content to empty string to prevent ghost rendering
           updateData(widget.id, { mode: 'list', items: newItems, content: "" });
         } else {
-          // Fix: Ensure items are just text when going back
           const newContent = items.map(i => `<div>${i.text}</div>`).join('');
           updateData(widget.id, { mode: 'text', content: newContent, items: [] });
         }
@@ -460,7 +558,7 @@
       const handleDragEnd = () => { setDraggedItemIndex(null); };
 
       return (
-        <div className={`h-full flex flex-col font-sans relative group ${theme.bg}`} style={{ boxShadow: 'inset 0 0 20px rgba(0,0,0,0.05)' }} onClick={() => setShowColorMenu(false)}>
+        <div className={`h-full flex flex-col relative group ${theme.bg}`} style={{ boxShadow: 'inset 0 0 20px rgba(0,0,0,0.05)', fontFamily: 'Poppins, sans-serif' }} onClick={() => setShowColorMenu(false)}>
           <div className={`h-10 flex items-center px-4 shrink-0 relative z-20 justify-between ${theme.header} border-b ${theme.border} bg-opacity-50`}>
             <div className="flex items-center gap-2">
               <button onClick={(e) => { e.stopPropagation(); setShowColorMenu(!showColorMenu); }} className={`w-4 h-4 rounded-full border border-black/10 shadow-sm ${theme.bg.replace('50', '400').replace('100', '400')}`} />
@@ -576,8 +674,15 @@
               <div>
                 <label className="text-sm font-bold text-gray-700 block mb-2">Number of Dice</label>
                 <div className="flex gap-2">
-                  <button onClick={() => updateData(widget.id, { diceCount: 1 })} className={`flex-1 py-2 rounded-lg font-bold transition-colors ${diceCount === 1 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'}`}>1 Die</button>
-                  <button onClick={() => updateData(widget.id, { diceCount: 2 })} className={`flex-1 py-2 rounded-lg font-bold transition-colors ${diceCount === 2 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'}`}>2 Dice</button>
+                  {[1, 2, 3].map(num => (
+                    <button
+                      key={num}
+                      onClick={() => updateData(widget.id, { diceCount: num })}
+                      className={`flex-1 py-2 rounded-lg font-bold transition-colors ${diceCount === num ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                    >
+                      {num}
+                    </button>
+                  ))}
                 </div>
               </div>
               <div>
@@ -753,19 +858,19 @@
 
       if (showSettings) {
         return (
-          <div className="h-full flex flex-col p-4 bg-slate-800 rounded-2xl border-4 border-slate-700 shadow-xl overflow-hidden relative">
-            <div className="flex justify-between items-center mb-4 text-white">
+          <div className="h-full flex flex-col p-4 bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden relative">
+            <div className="flex justify-between items-center mb-4 text-gray-700">
               <h3 className="font-bold text-sm uppercase tracking-wider">Settings</h3>
-              <button onClick={() => updateData(widget.id, { showSettings: false })} className="text-gray-400 hover:text-white"><X size={18} /></button>
+              <button onClick={() => updateData(widget.id, { showSettings: false })} className="text-gray-400 hover:text-gray-700"><X size={18} /></button>
             </div>
             <div className="space-y-4 flex-1">
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Sensitivity ({sensitivity}%)</label>
-                <input type="range" min="1" max="100" value={sensitivity} onChange={e => updateData(widget.id, { sensitivity: Number(e.target.value) })} className="w-full accent-blue-500 h-1 bg-gray-600 rounded-lg appearance-none" />
+                <input type="range" min="1" max="100" value={sensitivity} onChange={e => updateData(widget.id, { sensitivity: Number(e.target.value) })} className="w-full accent-blue-500 h-1 bg-gray-200 rounded-lg appearance-none" />
               </div>
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Max Volume ({threshold}%)</label>
-                <input type="range" min="1" max="100" value={threshold} onChange={e => updateData(widget.id, { threshold: Number(e.target.value) })} className="w-full accent-red-500 h-1 bg-gray-600 rounded-lg appearance-none" />
+                <input type="range" min="1" max="100" value={threshold} onChange={e => updateData(widget.id, { threshold: Number(e.target.value) })} className="w-full accent-red-500 h-1 bg-gray-200 rounded-lg appearance-none" />
               </div>
               <div className="text-[10px] text-gray-500 italic mt-2">
                 Higher sensitivity = detects quieter sounds.<br />
@@ -777,18 +882,18 @@
       }
 
       return (
-        <div className="h-full flex flex-col items-center justify-between p-4 bg-slate-800 rounded-2xl border-4 border-slate-700 shadow-xl relative group">
+        <div className="h-full flex flex-col items-center justify-between p-4 bg-white rounded-2xl border border-gray-200 shadow-xl relative group">
           <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
             <button
               onClick={() => updateData(widget.id, { showSettings: true })}
-              className="p-1.5 bg-slate-700 text-gray-400 hover:text-white rounded-full hover:bg-slate-600 transition-colors"
+              className="p-1.5 bg-gray-100 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition-colors"
               title="Settings"
             >
               <Settings size={14} />
             </button>
             <button
               onClick={() => updateData(widget.id, { isListening: !isListening })}
-              className={`p-1.5 rounded-full transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-700 text-gray-400 hover:text-white hover:bg-slate-600'}`}
+              className={`p-1.5 rounded-full transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
               title={isListening ? "Stop Auto-Listen" : "Start Auto-Listen"}
             >
               {isListening ? <Mic size={14} /> : <Mic size={14} className="opacity-50" />}
@@ -805,8 +910,8 @@
                   color === 'red' ? 'bg-red-500 shadow-[0_0_30px_rgba(239,68,68,0.8)] scale-105' :
                     color === 'yellow' ? 'bg-yellow-400 shadow-[0_0_30px_rgba(250,204,21,0.8)] scale-105' :
                       'bg-green-500 shadow-[0_0_30px_rgba(34,197,94,0.8)] scale-105'
-                ) : 'bg-slate-900 opacity-40 scale-100'}
-                ${!isListening ? 'cursor-pointer hover:opacity-60' : ''}
+                ) : 'bg-gray-100 scale-100'}
+                ${!isListening ? 'cursor-pointer hover:opacity-80' : ''}
               `}
             />
           ))}
@@ -865,7 +970,7 @@
 
     const GRID_SIZE = 20;
     const HEADER_HEIGHT = 40;
-    const WIDGET_TYPE_LABELS = { NOISE: 'Noise Meter', TIMER: 'Timer', RANDOMIZER: 'Random', GROUP_MAKER: 'Groups', SEAT_PICKER: 'Seats', TEXT: 'Notes', WEBCAM: 'Cam', DICE: 'Dice', TRAFFIC: 'Noise', QR: 'QR Code', VOTE: 'Poll', WHITEBOARD: 'Draw', SCHEDULE: 'Schedule', YOUTUBE: 'Embed' };
+    const WIDGET_TYPE_LABELS = { TIMER: 'Timer', RANDOMIZER: 'Random', GROUP_MAKER: 'Groups', SEAT_PICKER: 'Seats', TEXT: 'Notes', WEBCAM: 'Cam', DICE: 'Dice', TRAFFIC: 'Noise', QR: 'QR Code', VOTE: 'Poll', WHITEBOARD: 'Draw', SCHEDULE: 'Schedule', YOUTUBE: 'Embed' };
     const DraggableResizable = ({ id, position, size, zIndex, isSelected, isMinimized = false, isSpotlighted = false, isGridEnabled = false, widgetType, onUpdate, onSelect, onRemove, onFontSizeChange, onMinimizeToggle, onSpotlight, children }) => {
       const [isDragging, setIsDragging] = useState(false); const [isResizing, setIsResizing] = useState(false); const startMousePos = useRef({ x: 0, y: 0 }); const startWidgetPos = useRef({ x: 0, y: 0 }); const startWidgetSize = useRef({ width: 0, height: 0 }); const onUpdateRef = useRef(onUpdate); const positionRef = useRef(position); const sizeRef = useRef(size); useEffect(() => { onUpdateRef.current = onUpdate; positionRef.current = position; sizeRef.current = size; }, [onUpdate, position, size]);
       const handleMouseDown = (e) => { e.stopPropagation(); onSelect(id); setIsDragging(true); startMousePos.current = { x: e.clientX, y: e.clientY }; startWidgetPos.current = { ...position }; };
@@ -1054,12 +1159,12 @@
                   )}
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <span className="font-bold text-2xl text-slate-700 bg-white/80 px-2 rounded-lg backdrop-blur-sm shadow-sm">{formatTime(timeLeft)}</span>
+                  <span className="font-bold text-slate-700 bg-white/80 px-2 rounded-lg backdrop-blur-sm shadow-sm" style={{ fontSize: (fontSize * 1.5) + 'px' }}>{formatTime(timeLeft)}</span>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-center">
-                <div className={`text-6xl font-black text-slate-800 tracking-widest mb-4 font-sans`}>{formatTime(timeLeft)}</div>
+                <div className={`font-black text-slate-800 tracking-widest mb-4 font-sans`} style={{ fontSize: (fontSize * 4) + 'px' }}>{formatTime(timeLeft)}</div>
                 {!isRunning && (
                   <div className="flex flex-col items-center gap-2">
                     <div className="flex gap-4">
@@ -1225,7 +1330,6 @@
                 <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Present: </span>
                 <span className="text-xs font-bold text-blue-600">{count}</span>
               </div>
-              <div className="text-[10px] text-gray-400">{columns} cols</div>
             </div>
 
             <div ref={containerRef} className="overflow-y-auto content-start custom-scrollbar flex-1" style={gridStyle}>
@@ -1680,7 +1784,7 @@
 
               {emojiItems.map(emoji => (
                 <div key={emoji.id} onMouseDown={(ev) => handleItemMouseDown(ev, 'emoji', emoji.id)} onClick={(e) => { e.stopPropagation(); setSelectedItem({ type: 'emoji', id: emoji.id }); }} className={`absolute cursor-move select-none ${selectedItem?.id === emoji.id ? 'ring-2 ring-blue-500 ring-offset-2 rounded-lg' : ''}`} style={{ left: `${emoji.x * 100}%`, top: `${emoji.y * 100}%`, transform: `translate(-50%, -50%) rotate(${emoji.rotation || 0}deg)`, fontSize: `${32 * (emoji.scale || 1)}px` }}>
-                  <span className="relative inline-block"> {emoji.emoji} </span>
+                  <span className="emoji relative inline-block"> {emoji.emoji} </span>
                   {selectedItem?.id === emoji.id && (
                     <>
                       <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-6 h-6 bg-white border border-blue-500 rounded-full shadow cursor-grab flex items-center justify-center p-1 z-50" onMouseDown={(e) => handleItemMouseDown(e, 'emoji', emoji.id, 'rotate')}><RotateCw size={12} className="text-blue-600" /></div>
@@ -1765,7 +1869,7 @@
               scheduleData.map((item, index) => {
                 const isCurrent = isCurrentItem(item, index);
                 return (
-                  <div key={item.id} draggable onDragStart={() => handleDragStart(index)} onDragOver={handleDragOver} onDrop={() => handleDrop(index)} className={`relative group flex gap-2 p-2 rounded-lg border transition-all cursor-move flex-1 min-h-[4rem] ${isCurrent ? 'bg-indigo-100 border-indigo-400 ring-2 ring-indigo-300' : 'bg-white border-gray-200 hover:border-indigo-200'}`}>
+                  <div key={item.id} draggable onDragStart={() => handleDragStart(index)} onDragOver={handleDragOver} onDrop={() => handleDrop(index)} className={`relative group flex gap-2 p-2 rounded-lg border transition-all cursor-move w-full min-h-[4rem] ${isCurrent ? 'bg-indigo-100 border-indigo-400 ring-2 ring-indigo-300' : 'bg-white border-gray-200 hover:border-indigo-200'}`} style={{ zIndex: emojiPickerIndex === index ? 50 : 0 }}>
                     {isCurrent && <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />}
 
                     <div className="flex flex-col items-center shrink-0 w-18">
@@ -2074,7 +2178,7 @@
 
             <div className="text-xs font-bold text-gray-500 uppercase mb-2">Upload Custom Background</div>
             <div
-              className={`relative border-2 border-dashed rounded-xl p-8 transition-all flex flex-col items-center justify-center gap-3 cursor-pointer group hover:border-blue-400 hover:bg-blue-50 ${dragActive ? 'border-blue-500 bg-blue-50 scale-[1.02]' : 'border-gray-300 bg-gray-50'}`}
+              className={`relative border-2 border-dashed rounded-xl p-4 transition-all flex items-center justify-between gap-3 cursor-pointer group hover:border-blue-400 hover:bg-blue-50 ${dragActive ? 'border-blue-500 bg-blue-50 scale-[1.02]' : 'border-gray-300 bg-gray-50'}`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
@@ -2082,10 +2186,10 @@
               onClick={() => fileInputRef.current?.click()}
             >
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && handleFile(e.target.files[0])} />
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors ${dragActive ? 'bg-blue-500 text-white' : 'bg-white text-blue-500 shadow-sm group-hover:scale-110'}`}>
-                {dragActive ? <Download size={32} className="animate-bounce" /> : <UploadCloud size={32} />}
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shrink-0 ${dragActive ? 'bg-blue-500 text-white' : 'bg-white text-blue-500 shadow-sm group-hover:scale-110'}`}>
+                {dragActive ? <Download size={20} className="animate-bounce" /> : <UploadCloud size={20} />}
               </div>
-              <div className="text-center">
+              <div className="flex-1 text-left">
                 <p className="text-gray-700 font-bold mb-1">
                   <span className="text-blue-600 hover:underline">Click to upload</span> or drag and drop
                 </p>
@@ -2210,9 +2314,34 @@
       const [scheduleTemplate, setScheduleTemplate] = useState(getScheduleTemplate());
       const [selectedDay, setSelectedDay] = useState('Monday');
       const [settingsEmojiPickerIndex, setSettingsEmojiPickerIndex] = useState(null);
+      const [showCopyMenu, setShowCopyMenu] = useState(false);
+      const [copyStatus, setCopyStatus] = useState('');
+      const [copyTargetDays, setCopyTargetDays] = useState([]);
+
+      const copyScheduleDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].filter(d => d !== selectedDay);
+
+      const handleBatchCopy = () => {
+        if (copyTargetDays.length === 0) return;
+        setScheduleTemplate(prev => {
+          const next = { ...prev };
+          const sourceItems = prev[selectedDay] || [];
+          copyTargetDays.forEach(day => {
+            next[day] = JSON.parse(JSON.stringify(sourceItems));
+          });
+          return next;
+        });
+        setCopyStatus(`Copied to ${copyTargetDays.length} days!`);
+        setTimeout(() => setCopyStatus(''), 2000);
+        setShowCopyMenu(false);
+        setCopyTargetDays([]);
+      };
+
+      const toggleCopyDay = (day) => {
+        setCopyTargetDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
+      };
 
       const addScheduleItem = (day) => {
-        const newItem = { id: Date.now().toString(), time: '09:00', emoji: 'ðŸ“š', title: 'New Activity', description: '' };
+        const newItem = { id: Date.now().toString(), time: '09:00', emoji: '📚', title: 'New Activity', description: '' };
         setScheduleTemplate(prev => ({ ...prev, [day]: [...(prev[day] || []), newItem] }));
       };
 
@@ -2403,23 +2532,55 @@
                   <p className="text-gray-600 text-sm mb-4">Set up your weekly schedule template. Each day's activities will load automatically when you open the Schedule widget.</p>
 
                   {/* Day Selector */}
-                  <div className="flex gap-1 mb-4 overflow-x-auto pb-2">
-                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(day => (
-                      <button
-                        key={day}
-                        onClick={() => setSelectedDay(day)}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${selectedDay === day ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                      >
-                        {day.slice(0, 3)}
-                        {scheduleTemplate[day]?.length > 0 && <span className="ml-1 opacity-70">({scheduleTemplate[day].length})</span>}
-                      </button>
-                    ))}
+                  <div className="flex gap-2 mb-4 items-start">
+                    <div className="flex-1 flex gap-1 overflow-x-auto pb-2 custom-scrollbar">
+                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(day => (
+                        <button
+                          key={day}
+                          onClick={() => setSelectedDay(day)}
+                          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${selectedDay === day ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        >
+                          {day.slice(0, 3)}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="relative shrink-0 pt-0.5">
+                      <button onClick={() => setShowCopyMenu(!showCopyMenu)} className="px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 flex items-center gap-1"><Copy size={12} /> Copy...</button>
+                      {showCopyMenu && (
+                        <div className="absolute top-full right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-50 w-48 overflow-hidden flex flex-col">
+                          <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase bg-gray-50 border-b">Copy {selectedDay} to:</div>
+                          <div className="max-h-48 overflow-y-auto custom-scrollbar p-1">
+                            {copyScheduleDays.map(d => (
+                              <label key={d} className="flex items-center gap-2 w-full text-left px-2 py-1.5 text-xs hover:bg-blue-50 text-gray-700 font-medium rounded cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={copyTargetDays.includes(d)}
+                                  onChange={() => toggleCopyDay(d)}
+                                  className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                {d}
+                              </label>
+                            ))}
+                          </div>
+                          <div className="p-2 border-t bg-gray-50">
+                            <button
+                              onClick={handleBatchCopy}
+                              disabled={copyTargetDays.length === 0}
+                              className="w-full bg-blue-600 text-white rounded py-1 text-xs font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Copy ({copyTargetDays.length})
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
+                  {copyStatus && <span className="text-xs text-green-600 font-bold block mb-2 animate-pulse">{copyStatus}</span>}
 
                   {/* Activities for selected day */}
                   <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                     {(scheduleTemplate[selectedDay] || []).map((item, index) => (
-                      <div key={item.id} className="flex gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                      <div key={item.id} className="relative flex gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200" style={{ zIndex: settingsEmojiPickerIndex === index ? 50 : 0 }}>
                         <input
                           type="time"
                           value={item.time || '09:00'}
@@ -2428,7 +2589,7 @@
                         />
                         <div className="relative">
                           <div
-                            className="text-lg cursor-pointer hover:scale-110 transition-transform p-1 rounded hover:bg-gray-200"
+                            className="text-lg cursor-pointer hover:scale-110 transition-transform p-1 rounded hover:bg-gray-200 emoji"
                             onClick={() => setSettingsEmojiPickerIndex(settingsEmojiPickerIndex === index ? null : index)}
                           >
                             {item.emoji || 'ðŸ“š'}
@@ -2440,7 +2601,7 @@
                                   <button
                                     key={i}
                                     onClick={() => { updateScheduleItem(selectedDay, index, 'emoji', emoji); setSettingsEmojiPickerIndex(null); }}
-                                    className={`text-xl p-1.5 rounded-lg hover:bg-indigo-100 transition-colors ${item.emoji === emoji ? 'bg-indigo-200 ring-2 ring-indigo-400' : ''}`}
+                                    className={`text-xl p-1.5 rounded-lg hover:bg-indigo-100 transition-colors emoji ${item.emoji === emoji ? 'bg-indigo-200 ring-2 ring-indigo-400' : ''}`}
                                   >
                                     {emoji}
                                   </button>
@@ -2673,17 +2834,38 @@
       const [isDockMinimized, setIsDockMinimized] = useState(false);
       const [dockOrder, setDockOrder] = useState(() => {
         const stored = getDockOrder();
+        const mainDefaults = ['TIMER', 'GROUP_MAKER', 'SEAT_PICKER', 'SCHEDULE', 'TEXT', 'RANDOMIZER'];
+        const drawerDefaults = ['TRAFFIC', 'QR', 'WEBCAM', 'DICE', 'VOTE', 'WHITEBOARD', 'YOUTUBE'];
+        const allDefaults = [...mainDefaults, ...drawerDefaults];
+
+        // 1. Legacy Array Migration
         if (Array.isArray(stored)) {
-          const mainDefaults = ['TIMER', 'GROUP_MAKER', 'SEAT_PICKER', 'SCHEDULE', 'TEXT', 'RANDOMIZER'];
-          const drawerDefaults = ['TRAFFIC', 'QR', 'WEBCAM', 'DICE', 'VOTE', 'WHITEBOARD', 'YOUTUBE'];
-          const allKnown = [...mainDefaults, ...drawerDefaults];
-          const extras = stored.filter(id => !allKnown.includes(id));
+          const extras = stored.filter(id => !allDefaults.includes(id));
+          const missing = allDefaults.filter(id => !stored.includes(id));
           return {
             main: mainDefaults.filter(id => stored.includes(id)),
-            drawer: [...drawerDefaults.filter(id => stored.includes(id)), ...extras]
+            drawer: [...drawerDefaults.filter(id => stored.includes(id)), ...extras, ...missing]
           };
         }
-        return stored;
+
+        // 2. Object Storage (Ensure new tools are added)
+        if (stored && stored.main && stored.drawer) {
+          const currentIds = [...stored.main, ...stored.drawer];
+          const missing = allDefaults.filter(id => !currentIds.includes(id));
+          if (missing.length > 0) {
+            return {
+              ...stored,
+              drawer: [...stored.drawer, ...missing]
+            };
+          }
+          return stored;
+        }
+
+        // 3. Fallback / First Load
+        return {
+          main: mainDefaults,
+          drawer: drawerDefaults
+        };
       });
 
       const [isDockLocked, setIsDockLocked] = useState(true);
@@ -2857,7 +3039,7 @@
       };
 
       // --- WIDGET MANAGEMENT ---
-      const addWidget = (type, extraData = {}) => { addToHistory(); const id = Date.now().toString(); const size = WIDGET_SIZES[type]; const position = { x: (window.innerWidth / 2) - (size.width / 2) + (Math.random() * 40 - 20), y: (window.innerHeight / 2) - (size.height / 2) + (Math.random() * 40 - 20) }; let data = { fontSize: 16 }; if (type === 'NOISE') data = { ...data, isListening: false, sensitivity: 50 }; if (type === 'TIMER') data = { ...data, timeLeft: 120, isRunning: false, mode: 'visual' }; if (type === 'RANDOMIZER') data = { ...data, students: getInitialStudents(), currentName: null, isAnimating: false }; if (type === 'GROUP_MAKER') data = { ...data, students: getInitialStudents(), groupCount: 4, groups: [] }; if (type === 'SEAT_PICKER') { const savedDesks = getSeatLayout(); if (savedDesks && savedDesks.length > 0) { data = { ...data, desks: savedDesks, isEditing: false }; } else { const initialStudents = getInitialStudents(); const initialDesks = initialStudents.slice(0, 8).map((s, i) => ({ id: `desk-${i}`, x: 50 + (i % 4) * 120, y: 50 + Math.floor(i / 4) * 100, student: s.name, color: 'blue', type: 'student', rotation: 0 })); data = { ...data, desks: initialDesks, isEditing: false }; } } if (type === 'TEXT') data = { ...data, mode: 'text', content: '', items: [] }; if (type === 'WEBCAM') data = { ...data, isMirrored: true, isActive: true }; if (type === 'DICE') data = { ...data, sides: 6, diceCount: 1, results: [1], isRolling: false }; if (type === 'TRAFFIC') data = { ...data, activeLight: null }; if (type === 'QR') data = { ...data, url: '' }; if (type === 'VOTE') data = { ...data, question: 'Class Poll', options: [{ id: 1, text: 'Yes', count: 0 }, { id: 2, text: 'No', count: 0 }] }; if (type === 'WHITEBOARD') data = { ...data, lines: [], color: '#000000', size: 5, tool: 'pen' }; if (type === 'SCHEDULE') { const template = getScheduleTemplate(); const today = DAYS_OF_WEEK[new Date().getDay()]; data = { ...data, items: template[today] || [] }; } if (type === 'YOUTUBE') { data = { ...data, youtubeUrl: '' }; } data = { ...data, ...extraData }; const newWidget = { id, type, position, size, zIndex: maxZIndex + 1, data, isMinimized: false }; setWidgets(prev => [...prev, newWidget]); setMaxZIndex(prev => prev + 1); setSelectedId(id); };
+      const addWidget = (type, extraData = {}) => { addToHistory(); const id = Date.now().toString(); const size = WIDGET_SIZES[type]; let startY = (window.innerHeight / 2) - (size.height / 2) + (Math.random() * 40 - 20); if (type === 'GROUP_MAKER') startY -= 100; const position = { x: (window.innerWidth / 2) - (size.width / 2) + (Math.random() * 40 - 20), y: startY }; let data = { fontSize: 16 }; if (type === 'TIMER') data = { ...data, timeLeft: 120, isRunning: false, mode: 'visual' }; if (type === 'RANDOMIZER') data = { ...data, students: getInitialStudents(), currentName: null, isAnimating: false }; if (type === 'GROUP_MAKER') data = { ...data, students: getInitialStudents(), groupCount: 4, groups: [] }; if (type === 'SEAT_PICKER') { const savedDesks = getSeatLayout(); if (savedDesks && savedDesks.length > 0) { data = { ...data, desks: savedDesks, isEditing: false }; } else { const initialStudents = getInitialStudents(); const initialDesks = initialStudents.slice(0, 8).map((s, i) => ({ id: `desk-${i}`, x: 50 + (i % 4) * 120, y: 50 + Math.floor(i / 4) * 100, student: s.name, color: 'blue', type: 'student', rotation: 0 })); data = { ...data, desks: initialDesks, isEditing: false }; } } if (type === 'TEXT') data = { ...data, mode: 'text', content: '', items: [] }; if (type === 'WEBCAM') data = { ...data, isMirrored: true, isActive: true }; if (type === 'DICE') data = { ...data, sides: 6, diceCount: 1, results: [1], isRolling: false }; if (type === 'TRAFFIC') data = { ...data, activeLight: null }; if (type === 'QR') data = { ...data, url: '' }; if (type === 'VOTE') data = { ...data, question: 'Class Poll', options: [{ id: 1, text: 'Yes', count: 0 }, { id: 2, text: 'No', count: 0 }] }; if (type === 'WHITEBOARD') data = { ...data, lines: [], color: '#000000', size: 5, tool: 'pen' }; if (type === 'SCHEDULE') { const template = getScheduleTemplate(); const today = DAYS_OF_WEEK[new Date().getDay()]; data = { ...data, items: template[today] || [] }; } if (type === 'YOUTUBE') { data = { ...data, youtubeUrl: '' }; } data = { ...data, ...extraData }; const newWidget = { id, type, position, size, zIndex: maxZIndex + 1, data, isMinimized: false }; setWidgets(prev => [...prev, newWidget]); setMaxZIndex(prev => prev + 1); setSelectedId(id); };
 
       useEffect(() => {
         const handlePaste = (e) => {
@@ -2998,7 +3180,7 @@
         );
       };
 
-      const renderWidgetContent = (widget) => { const props = { widget, updateData: updateWidgetData, roster, onUpdateRoster: setRoster }; switch (widget.type) { case 'NOISE': return <NoiseMeterWidget {...props} />; case 'TIMER': return <TimerWidget {...props} />; case 'RANDOMIZER': return <RandomizerWidget {...props} />; case 'GROUP_MAKER': return <GroupMakerWidget {...props} />; case 'SEAT_PICKER': return <SeatPickerWidget {...props} />; case 'TEXT': return <TextWidget {...props} />; case 'WEBCAM': return <WebcamWidget {...props} />; case 'DICE': return <DiceWidget {...props} />; case 'TRAFFIC': return <TrafficLightWidget {...props} />; case 'QR': return <QRCodeWidget {...props} />; case 'VOTE': return <VoteWidget {...props} />; case 'WHITEBOARD': return <WhiteboardWidget {...props} />; case 'SCHEDULE': return <ScheduleWidget {...props} onOpenSettings={() => { setSettingsInitialTab('schedule'); setShowSettingsModal(true); }} />; case 'YOUTUBE': return <YouTubeWidget {...props} />; default: return null; } };
+      const renderWidgetContent = (widget) => { const props = { widget, updateData: updateWidgetData, roster, onUpdateRoster: setRoster }; switch (widget.type) { case 'TIMER': return <TimerWidget {...props} />; case 'RANDOMIZER': return <RandomizerWidget {...props} />; case 'GROUP_MAKER': return <GroupMakerWidget {...props} />; case 'SEAT_PICKER': return <SeatPickerWidget {...props} />; case 'TEXT': return <TextWidget {...props} />; case 'WEBCAM': return <WebcamWidget {...props} />; case 'DICE': return <DiceWidget {...props} />; case 'TRAFFIC': return <TrafficLightWidget {...props} />; case 'QR': return <QRCodeWidget {...props} />; case 'VOTE': return <VoteWidget {...props} />; case 'WHITEBOARD': return <WhiteboardWidget {...props} />; case 'SCHEDULE': return <ScheduleWidget {...props} onOpenSettings={() => { setSettingsInitialTab('schedule'); setShowSettingsModal(true); }} />; case 'YOUTUBE': return <YouTubeWidget {...props} />; default: return null; } };
 
       return (
         <div className="w-screen h-screen overflow-hidden relative" style={{
