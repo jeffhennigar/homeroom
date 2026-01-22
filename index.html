@@ -1428,20 +1428,43 @@
         e.dataTransfer.dropEffect = 'move';
       };
 
-      const handleDrop = (e, targetGroupIndex) => {
+      const handleDrop = (e, targetGroupIndex, targetInfo = {}) => {
         e.preventDefault();
+        e.stopPropagation();
         const studentId = dragItem.current;
         const sourceIndex = dragSourceGroup.current;
 
-        if (studentId === null || sourceIndex === null || sourceIndex === targetGroupIndex) return;
+        if (studentId === null || sourceIndex === null) return;
 
-        const newGroups = [...groups];
+        // Don't drop on self
+        if (sourceIndex === targetGroupIndex && studentId === targetInfo.studentId) return;
+
+        // Deep copy
+        const newGroups = groups.map(g => [...g]);
+
         // Find student in source
-        const studentIndex = newGroups[sourceIndex].findIndex(s => s.id === studentId);
-        if (studentIndex === -1) return;
+        const sourceGroup = newGroups[sourceIndex];
+        const sourceStudentIndex = sourceGroup.findIndex(s => s.id === studentId);
+        if (sourceStudentIndex === -1) return;
 
-        const [student] = newGroups[sourceIndex].splice(studentIndex, 1);
-        newGroups[targetGroupIndex].push(student);
+        // Remove from source
+        const [student] = sourceGroup.splice(sourceStudentIndex, 1);
+
+        // Determine Insert Index
+        let insertIndex = newGroups[targetGroupIndex].length;
+        if (targetInfo.studentId) {
+          const targetStudentIndex = newGroups[targetGroupIndex].findIndex(s => s.id === targetInfo.studentId);
+          if (targetStudentIndex !== -1) {
+            // If moving within same group downwards, insert AFTER
+            if (sourceIndex === targetGroupIndex && sourceStudentIndex < targetStudentIndex) {
+              insertIndex = targetStudentIndex + 1;
+            } else {
+              insertIndex = targetStudentIndex;
+            }
+          }
+        }
+
+        newGroups[targetGroupIndex].splice(insertIndex, 0, student);
 
         updateData(widget.id, { groups: newGroups });
         dragItem.current = null;
@@ -1522,7 +1545,9 @@
                         key={s.id}
                         draggable
                         onDragStart={(e) => handleDragStart(e, s.id, i)}
-                        className="px-1.5 py-0.5 bg-gray-50 hover:bg-blue-100 rounded flex items-center text-gray-700 font-medium truncate cursor-grab active:cursor-grabbing border border-transparent hover:border-blue-200 transition-colors"
+                        onDrop={(e) => handleDrop(e, i, { studentId: s.id })}
+                        onDragOver={handleDragOver}
+                        className="px-1.5 py-0.5 bg-gray-50 hover:bg-blue-100 rounded flex items-center text-gray-700 font-medium cursor-grab active:cursor-grabbing border border-transparent hover:border-blue-200 transition-colors break-words whitespace-normal leading-tight"
                         style={{ fontSize: scaledFS + 'px' }}
                       >
                         {s.name}
