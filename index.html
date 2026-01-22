@@ -89,7 +89,7 @@
       Save, AlertCircle, AlertTriangle, Share2, Edit3, Layout, User, MoreVertical, MoreHorizontal, Briefcase,
       RotateCw, Lock, Unlock, Grip, Palette, Image as ImageIcon, UploadCloud,
       Sun, Moon, BarChart2, Italic, Underline, AlignLeft, Clock, Smile,
-      Volume2, VolumeX, Download, Upload, Check, Info, ExternalLink, Mail, Calendar, Youtube, Lightbulb, MousePointer2, Undo2, Redo2, ArrowRightSquare, QrCode
+      Volume2, VolumeX, Download, Upload, Check, Info, ExternalLink, Mail, Calendar, Youtube, Lightbulb, MousePointer2, Undo2, Redo2, ArrowRightSquare, QrCode, Bell
     } from 'lucide-react';
 
     // --- CONSTANTS ---
@@ -194,7 +194,7 @@
       TEXT: { width: 340, height: 260 },
       WEBCAM: { width: 320, height: 240 },
       DICE: { width: 300, height: 320 },
-      TRAFFIC: { width: 220, height: 320 },
+      TRAFFIC: { width: 220, height: 360 },
       QR: { width: 250, height: 280 },
       VOTE: { width: 400, height: 350 },
       WHITEBOARD: { width: 500, height: 400 },
@@ -978,7 +978,7 @@
       }
 
       return (
-        <div className="h-full flex flex-col items-center justify-between p-4 bg-white rounded-2xl border border-gray-200 shadow-xl relative group" style={{ transform: `scale(${fontSize / 16})`, transformOrigin: 'center' }}>
+        <div className="h-full flex flex-col items-center justify-center gap-3 p-4 bg-white rounded-2xl border border-gray-200 shadow-xl relative group" style={{ transform: `scale(${fontSize / 16})`, transformOrigin: 'center' }}>
           <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
             <button
               onClick={() => updateData(widget.id, { showSettings: true })}
@@ -2412,7 +2412,7 @@
       );
     };
 
-    const SettingsModal = ({ onClose, onSave, downloadData, uploadData, roster, allRosters, activeRosterId, onSetActiveRoster, onAddRoster, onDeleteRoster, onRenameRoster, fileInputRef, initialTab = 'roster', isGridEnabled, onToggleGrid, currentBg, onBgSelect, myBackgrounds, onAddCustomBg, onDeleteCustomBg }) => {
+    const SettingsModal = ({ onClose, onSave, downloadData, uploadData, roster, allRosters, activeRosterId, onSetActiveRoster, onAddRoster, onDeleteRoster, onRenameRoster, fileInputRef, initialTab = 'roster', isGridEnabled, onToggleGrid, currentBg, onBgSelect, myBackgrounds, onAddCustomBg, onDeleteCustomBg, backupEnabled, setBackupEnabled, backupInterval, setBackupInterval, settingsTimePickerIndex, setSettingsTimePickerIndex }) => {
       const [activeTab, setActiveTab] = useState(initialTab);
       const [mode, setMode] = useState('list');
 
@@ -2864,7 +2864,13 @@
               {/* DATA TAB */}
               {activeTab === 'data' && (
                 <div className="p-6">
-                  <p className="text-gray-600 text-sm mb-6">Export your data to save a backup, or import a previous backup to restore your settings, roster, and widgets.</p>
+                  <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-xl flex gap-3">
+                    <div className="shrink-0 text-blue-500"><Info size={20} /></div>
+                    <div className="text-sm text-blue-900">
+                      <p className="font-bold mb-1">Your Data is Private & Local</p>
+                      <p className="opacity-80 leading-relaxed">HomeRoom stores all your data directly on this computer's browser. Nothing is sent to the cloud. Please <strong>backup your data regularly</strong> to keep it safe!</p>
+                    </div>
+                  </div>
                   <div className="space-y-3">
                     <button onClick={downloadData} className="w-full flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 rounded-xl transition-colors group border border-green-200">
                       <div className="p-3 bg-green-500 rounded-xl text-white"><Download size={20} /></div>
@@ -2880,6 +2886,51 @@
                         <div className="text-xs text-gray-500">Restore from a backup file</div>
                       </div>
                     </button>
+                  </div>
+
+                  {/* Backup Settings */}
+                  <div className="mt-6 border-t pt-6">
+                    <h4 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">Backup Reminders</h4>
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <div className="flex items-center gap-2">
+                          <div className={`p-2 rounded-lg ${backupEnabled ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'}`}><Bell size={18} /></div>
+                          <div>
+                            <div className="font-bold text-sm text-gray-800">Backup Reminders</div>
+                            <div className="text-[10px] text-gray-500">Show a prompt to backup your data</div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setBackupEnabled(!backupEnabled)}
+                          className={`relative w-12 h-7 rounded-full transition-colors ${backupEnabled ? 'bg-indigo-500' : 'bg-gray-300'}`}
+                        >
+                          <div className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${backupEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
+                      </div>
+
+                      {backupEnabled && (
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                          <div className="flex items-center gap-2">
+                            <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><Clock size={18} /></div>
+                            <div>
+                              <div className="font-bold text-sm text-gray-800">Reminder Frequency</div>
+                              <div className="text-[10px] text-gray-500">How often to remind you</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min="1"
+                              max="365"
+                              value={backupInterval}
+                              onChange={(e) => setBackupInterval(Math.max(1, parseInt(e.target.value) || 1))}
+                              className="w-16 p-2 text-center font-bold border rounded-lg outline-none focus:border-indigo-500 border-gray-300"
+                            />
+                            <span className="text-sm font-bold text-gray-500">days</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -3159,6 +3210,7 @@
       const [showOnboarding, setShowOnboarding] = useState(false);
       const [showSettingsModal, setShowSettingsModal] = useState(false);
       const [settingsInitialTab, setSettingsInitialTab] = useState('roster');
+      const [showBackupPrompt, setShowBackupPrompt] = useState(true); // Control visibility of backup prompt
 
       // New Background State
       const [background, setBackground] = useState(getBackground());
@@ -3169,6 +3221,20 @@
       useEffect(() => { localStorage.setItem('homeroom_grid_enabled', JSON.stringify(isGridEnabled)); }, [isGridEnabled]);
       useEffect(() => { localStorage.setItem('homeroom_slide_backgrounds', JSON.stringify(slideBackgrounds)); }, [slideBackgrounds]);
       useEffect(() => { localStorage.setItem('homeroom_my_backgrounds', JSON.stringify(customBackgrounds)); }, [customBackgrounds]);
+
+      // Backup Settings
+      const [backupEnabled, setBackupEnabled] = useState(() => { try { return JSON.parse(localStorage.getItem('homeroom_backup_enabled')) ?? true; } catch { return true; } });
+      const [backupInterval, setBackupInterval] = useState(() => { try { return parseInt(localStorage.getItem('homeroom_backup_interval')) || 7; } catch { return 7; } });
+
+      useEffect(() => { localStorage.setItem('homeroom_backup_enabled', JSON.stringify(backupEnabled)); }, [backupEnabled]);
+      useEffect(() => { localStorage.setItem('homeroom_backup_interval', backupInterval); }, [backupInterval]);
+
+      // Initialize backup timer on first load
+      useEffect(() => {
+        if (!localStorage.getItem('homeroom_last_backup')) {
+          localStorage.setItem('homeroom_last_backup', Date.now());
+        }
+      }, []);
 
       // --- PERSISTENCE & DATA ---
       useEffect(() => {
@@ -3181,11 +3247,25 @@
 
       const fileInputRef = useRef(null);
       const downloadData = () => {
-        const data = { roster: getRoster(), dock: getDockOrder(), widgets: slides, background, slideBackgrounds, customBackgrounds, timestamp: Date.now() };
+        const data = {
+          roster: getRoster(), // Current roster
+          allRosters, // All class rosters
+          activeRosterId,
+          scheduleTemplate: getScheduleTemplate(), // Weekly schedule
+          dock: getDockOrder(),
+          widgets: slides, // Includes widget data (seating positions, randomizer picks, whiteboard lines, etc.)
+          background,
+          slideBackgrounds,
+          customBackgrounds,
+          timestamp: Date.now()
+        };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = `homeroom-${new Date().toISOString().slice(0, 10)}.json`;
+        const a = document.createElement('a'); a.href = url; a.download = `homeroom-backup-${new Date().toISOString().slice(0, 10)}.json`;
         document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        // Auto-dismiss prompt on backup
+        setShowBackupPrompt(false);
+        localStorage.setItem('homeroom_last_backup', Date.now());
       };
 
       const uploadData = (e) => {
@@ -3195,7 +3275,26 @@
         reader.onload = (ev) => {
           try {
             const d = JSON.parse(ev.target.result);
-            if (d.roster) saveRoster(d.roster);
+            // Restore Rosters
+            if (d.allRosters) {
+              setAllRosters(d.allRosters);
+              localStorage.setItem('homeroom_all_rosters', JSON.stringify(d.allRosters));
+            } else if (d.roster) {
+              // Backward compatibility for single roster exports
+              saveRoster(d.roster);
+              setRoster(d.roster);
+            }
+
+            if (d.activeRosterId) {
+              setActiveRosterId(d.activeRosterId);
+              localStorage.setItem('homeroom_active_roster_id', d.activeRosterId);
+            }
+
+            if (d.scheduleTemplate) {
+              setScheduleTemplate(d.scheduleTemplate);
+              saveScheduleTemplate(d.scheduleTemplate);
+            }
+            // Restore other settings
             if (d.dock) saveDockOrder(d.dock);
             if (d.background) saveBackground(d.background);
             if (d.widgets) setSlides(d.widgets);
@@ -3408,6 +3507,12 @@
             myBackgrounds={customBackgrounds}
             onAddCustomBg={(bg) => setCustomBackgrounds(prev => [bg, ...prev])}
             onDeleteCustomBg={(id) => setCustomBackgrounds(prev => prev.filter(bg => bg.id !== id))}
+            backupEnabled={backupEnabled}
+            setBackupEnabled={setBackupEnabled}
+            backupInterval={backupInterval}
+            setBackupInterval={setBackupInterval}
+            settingsTimePickerIndex={settingsTimePickerIndex}
+            setSettingsTimePickerIndex={setSettingsTimePickerIndex}
           />}
           <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={uploadData} />
 
@@ -3428,15 +3533,23 @@
               <div className={`text-8xl font-bold tracking-tight ${currentBg.textColor === 'text-white' ? 'drop-shadow-lg' : 'drop-shadow-sm'}`}>{currentTime}</div>
               <div className={`text-3xl font-medium mt-2 opacity-90 ${currentBg.textColor === 'text-white' ? 'drop-shadow-md' : ''}`}>{currentDate}</div>
             </div>
-            {/* Backup Prompt (Item 7) */}
             {(() => {
+              // Don't show if disabled
+              if (!backupEnabled) return null;
+
               const last = localStorage.getItem('homeroom_last_backup');
-              const days = last ? (Date.now() - Number(last)) / (1000 * 60 * 60 * 24) : 999;
-              if (days > 7) {
+              // If last backup time is valid check vs interval, otherwise wait (initialized to now above)
+              const days = last ? (Date.now() - Number(last)) / (1000 * 60 * 60 * 24) : 0;
+
+              if (days > backupInterval && showBackupPrompt) {
                 return (
-                  <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                    <button onClick={() => { downloadData(); localStorage.setItem('homeroom_last_backup', Date.now()); }} className="flex items-center gap-2 bg-red-100/90 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:bg-red-200 backdrop-blur-sm transition-all hover:scale-105">
+                  <div className="mt-4 animate-in fade-in slide-in-from-top-2 flex items-center gap-1 bg-red-100/90 rounded-lg p-1 pr-2 shadow-sm border border-red-200">
+                    <button onClick={downloadData} className="flex items-center gap-2 text-red-600 px-2 py-1 rounded text-xs font-bold hover:bg-red-200 transition-colors">
                       <AlertTriangle size={14} /> Backup Data
+                    </button>
+                    <div className="w-px h-4 bg-red-200" />
+                    <button onClick={() => setShowBackupPrompt(false)} className="p-1 text-red-400 hover:text-red-700 hover:bg-red-200 rounded-md transition-colors" title="Dismiss">
+                      <X size={14} />
                     </button>
                   </div>
                 );
