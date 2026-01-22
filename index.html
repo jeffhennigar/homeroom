@@ -68,6 +68,7 @@
     "imports": {
       "react": "https://esm.sh/react@18.2.0",
       "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+      "react-dom": "https://esm.sh/react-dom@18.2.0",
       "lucide-react": "https://esm.sh/lucide-react@0.292.0"
     }
   }
@@ -78,8 +79,9 @@
   <div id="root"></div>
 
   <script type="text/babel" data-type="module">
-    import React, { useState, useEffect, useRef, useCallback } from 'react';
+    import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
     import { createRoot } from 'react-dom/client';
+    import { createPortal } from 'react-dom';
     import {
       Mic, Eraser, Timer, Shuffle, Users, Type, Armchair,
       Camera, Dices, ChevronDown, ChevronUp, Copy,
@@ -205,11 +207,22 @@
 
     // --- COMPONENTS ---
     // Custom Time Picker (Items 9 & 10)
-    const TimePicker = ({ time, onChange, onClose }) => {
+    const TimePicker = ({ time, onChange, onClose, triggerRef }) => {
       const [hours, minutes] = time.split(':').map(Number);
       const isPM = hours >= 12;
       const displayHours = hours % 12 || 12;
       const [manualInput, setManualInput] = useState("");
+      const [position, setPosition] = useState(null);
+
+      useLayoutEffect(() => {
+        if (triggerRef && triggerRef.current) {
+          const rect = triggerRef.current.getBoundingClientRect();
+          // Logic to keep onscreen
+          const top = rect.bottom + 5;
+          const left = Math.max(10, Math.min(window.innerWidth - 300, rect.left));
+          setPosition({ top, left });
+        }
+      }, [triggerRef]);
 
       const handleHourChange = (h) => {
         let newH = h;
@@ -232,26 +245,38 @@
         const [hStr, mStr] = manualInput.split(':');
         let h = parseInt(hStr);
         let m = parseInt(mStr) || 0;
-
-        // Basic AM/PM detection if user types "9pm"
         const isPMInput = manualInput.toLowerCase().includes('p');
         const isAMInput = manualInput.toLowerCase().includes('a');
-
         if (isNaN(h)) return;
-
         if (isPMInput && h < 12) h += 12;
         if (isAMInput && h === 12) h = 0;
-
-        // Clamp
         h = Math.max(0, Math.min(23, h));
         m = Math.max(0, Math.min(59, m));
-
         onChange(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
         setManualInput("");
       };
 
-      return (
-        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-[60] p-3 flex flex-col gap-2 animate-in fade-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
+      // Close on click outside
+      useEffect(() => {
+        const handleOutsideClick = (e) => {
+          // If click is NOT in Portal div
+          if (e.target.closest('.time-picker-portal')) return;
+          // If click is on trigger, handle it? No, parent handles that.
+          // Just close if clicking elsewhere
+          onClose();
+        };
+        setTimeout(() => window.addEventListener('click', handleOutsideClick), 10);
+        return () => window.removeEventListener('click', handleOutsideClick);
+      }, [onClose]);
+
+      if (!position) return null;
+
+      return createPortal(
+        <div
+          className="fixed bg-white border border-gray-200 rounded-xl shadow-2xl z-[99999] p-3 flex flex-col gap-2 animate-in fade-in zoom-in-95 time-picker-portal"
+          style={{ top: position.top, left: position.left }}
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Manual Input */}
           <div className="flex gap-1 border-b border-gray-100 pb-2 mb-1">
             <input
@@ -259,12 +284,7 @@
               placeholder="9:30"
               value={manualInput}
               onChange={(e) => setManualInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleManualSubmit();
-                  onClose();
-                }
-              }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { handleManualSubmit(); onClose(); } }}
               autoFocus
             />
             <button onClick={() => { handleManualSubmit(); onClose(); }} className="px-2 py-0.5 bg-blue-100 text-blue-600 rounded text-[10px] font-bold hover:bg-blue-200">OK</button>
@@ -294,7 +314,8 @@
               <button onClick={onClose} className="px-2 py-1 text-xs font-bold text-green-600 hover:bg-green-50 rounded">Done</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       );
     };
 
@@ -549,7 +570,7 @@
                   <div onMouseDown={(e) => handleRotateMouseDown(e, desk.id)} className="absolute -top-3 -left-3 bg-blue-500 text-white rounded-full p-1 shadow-sm hover:bg-blue-600 w-6 h-6 flex items-center justify-center z-20 cursor-grab active:cursor-grabbing"><RotateCw size={14} strokeWidth={2.5} /></div>
                 </>)}
                 {/* Fix text selection on name */}
-                {desk.type === "teacher" ? <div className="flex flex-col items-center opacity-80 select-none"><Briefcase size={16} className="mb-0.5" /><span className="text-[8px] uppercase font-bold tracking-widest">Teacher</span></div> : (desk.student ? <span className={`font-bold text-center px-0.5 truncate w-full text-[11px] select-none ${isAbsent ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{desk.student}</span> : <span className={`italic text-[10px] select-none ${desk.color === "yellow" ? "text-yellow-700/50" : "text-slate-300"}`}>Empty</span>)}
+                {desk.type === "teacher" ? <div className="flex flex-col items-center opacity-80 select-none"><Briefcase size={16} className="mb-0.5" /><span className="text-[8px] uppercase font-bold tracking-widest">Teacher</span></div> : (desk.student ? <span className={`font-bold text-center px-0.5 truncate w-full select-none ${isAbsent ? 'text-slate-400 line-through' : 'text-slate-800'}`} style={{ fontSize: 'inherit' }}>{desk.student}</span> : <span className={`italic text-[10px] select-none ${desk.color === "yellow" ? "text-yellow-700/50" : "text-slate-300"}`}>Empty</span>)}
                 {desk.type !== "teacher" && <div className={`absolute -bottom-1 w-8 h-1 rounded-full ${desk.color === "yellow" ? "bg-yellow-200" : "bg-slate-200"}`} />}
               </div>);
             })}
@@ -1050,7 +1071,7 @@
       const displayHeight = isMinimized ? HEADER_HEIGHT : size.height;
       const widgetLabel = WIDGET_TYPE_LABELS[widgetType] || widgetType || '';
       const computedZIndex = isSpotlighted ? 10000 : (isSelected ? 9999 : (zIndex + 100));
-      return (<div className={`absolute flex flex-col bg-white rounded-xl shadow-xl overflow-hidden border-2 pointer-events-auto ${isDragging || isResizing ? '' : 'transition-all duration-200'} ${isSelected ? 'border-blue-500 shadow-2xl' : 'border-transparent border-gray-100'} ${isSpotlighted ? 'shadow-[0_0_80px_20px_rgba(255,255,255,0.3)]' : ''}`} style={{ left: position.x, top: position.y, width: size.width, height: displayHeight, zIndex: computedZIndex, touchAction: 'none' }} onMouseDown={() => { if (!isSelected) onSelect(id); }}> <div className="h-10 bg-gray-50 flex items-center justify-between px-2 cursor-move border-b border-gray-100 group select-none flex-shrink-0" onMouseDown={handleMouseDown}> <div className="flex items-center gap-1"> {onFontSizeChange && (<><button onClick={(e) => { e.stopPropagation(); onFontSizeChange?.(-2); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"><Minus size={14} strokeWidth={3} /></button> <button onClick={(e) => { e.stopPropagation(); onFontSizeChange?.(2); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"><Plus size={14} strokeWidth={3} /></button></>)} </div> <div className="flex-1 flex justify-center">{isMinimized ? <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{widgetLabel}</span> : <div className="w-12 h-1.5 bg-gray-300 rounded-full group-hover:bg-blue-400 transition-colors" />}</div> <div className="flex items-center gap-1"> {onSpotlight && (<button onClick={(e) => { e.stopPropagation(); onSpotlight(id); }} className={`p-1 rounded transition-colors ${isSpotlighted ? 'text-yellow-500 bg-yellow-100' : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50'}`} title="Spotlight"> <Lightbulb size={14} /> </button>)} {onMinimizeToggle && (<button onClick={(e) => { e.stopPropagation(); onMinimizeToggle(id); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors" title={isMinimized ? "Restore" : "Minimize"}> <span className="font-bold text-sm leading-none">{isMinimized ? '+' : '−'}</span> </button>)} <button onClick={(e) => { e.stopPropagation(); onRemove(id); }} className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> </button> </div> </div> {!isMinimized && <div className="flex-1 relative overflow-hidden flex flex-col custom-scrollbar">{children}</div>} {!isMinimized && <div className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize flex items-end justify-end p-1 opacity-0 hover:opacity-100 transition-opacity bg-gradient-to-tl from-gray-100 to-transparent z-10" onMouseDown={handleResizeStart}> <Maximize2 size={16} className="text-gray-400 transform rotate-90" /> </div>} </div>);
+      return (<div className={`absolute flex flex-col bg-white rounded-xl shadow-xl overflow-hidden border-2 pointer-events-auto ${isDragging || isResizing ? '' : 'transition-all duration-200'} ${isSelected ? 'border-blue-500 shadow-2xl' : 'border-transparent border-gray-100'} ${isSpotlighted ? 'shadow-[0_0_80px_20px_rgba(255,255,255,0.3)]' : ''}`} style={{ left: position.x, top: position.y, width: size.width, height: displayHeight, zIndex: computedZIndex, touchAction: 'none' }} onMouseDown={() => { if (!isSelected) onSelect(id); }}> <div className="h-10 bg-gray-50 flex items-center justify-between px-2 cursor-move border-b border-gray-100 group select-none flex-shrink-0 relative" onMouseDown={handleMouseDown}> <div className="flex items-center gap-1 z-10"> {onFontSizeChange && (<><button onClick={(e) => { e.stopPropagation(); onFontSizeChange?.(-2); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"><Minus size={14} strokeWidth={3} /></button> <button onClick={(e) => { e.stopPropagation(); onFontSizeChange?.(2); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"><Plus size={14} strokeWidth={3} /></button></>)} </div> <div className="absolute inset-0 flex items-center justify-center pointer-events-none">{isMinimized ? <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{widgetLabel}</span> : <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-1.5 bg-gray-300 rounded-full group-hover:bg-blue-400 transition-colors pointer-events-auto" />}</div> <div className="flex items-center gap-1 z-10"> {onSpotlight && (<button onClick={(e) => { e.stopPropagation(); onSpotlight(id); }} className={`p-1 rounded transition-colors ${isSpotlighted ? 'text-yellow-500 bg-yellow-100' : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50'}`} title="Spotlight"> <Lightbulb size={14} /> </button>)} {onMinimizeToggle && (<button onClick={(e) => { e.stopPropagation(); onMinimizeToggle(id); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors" title={isMinimized ? "Restore" : "Minimize"}> <span className="font-bold text-sm leading-none">{isMinimized ? '+' : '−'}</span> </button>)} <button onClick={(e) => { e.stopPropagation(); onRemove(id); }} className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> </button> </div> </div> {!isMinimized && <div className="flex-1 relative overflow-hidden flex flex-col custom-scrollbar">{children}</div>} {!isMinimized && <div className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize flex items-end justify-end p-1 opacity-0 hover:opacity-100 transition-opacity bg-gradient-to-tl from-gray-100 to-transparent z-10" onMouseDown={handleResizeStart}> <Maximize2 size={16} className="text-gray-400 transform rotate-90" /> </div>} </div>);
     };
     const TimerWidget = ({ widget, updateData }) => {
       const { durationMinutes = 2, timeLeft = 120, isRunning = false, fontSize = 16, mode = 'visual', color = 'blue', isMuted = false } = widget.data;
@@ -1366,6 +1387,8 @@
       const { groups = [], fontSize = 16, groupCount = 4 } = widget.data;
       const containerRef = useRef(null);
       const [columns, setColumns] = useState(4);
+      const dragItem = useRef(null);
+      const dragSourceGroup = useRef(null);
 
       const activeStudents = roster.filter(s => s.active);
       const count = activeStudents.length;
@@ -1393,6 +1416,38 @@
         updateData(widget.id, { groups: newG, groupCount: countNeeded });
       };
 
+      const handleDragStart = (e, studentId, groupIndex) => {
+        dragItem.current = studentId;
+        dragSourceGroup.current = groupIndex;
+        e.dataTransfer.effectAllowed = 'move';
+        // Transparent drag image or default? Default is fine.
+      };
+
+      const handleDragOver = (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      };
+
+      const handleDrop = (e, targetGroupIndex) => {
+        e.preventDefault();
+        const studentId = dragItem.current;
+        const sourceIndex = dragSourceGroup.current;
+
+        if (studentId === null || sourceIndex === null || sourceIndex === targetGroupIndex) return;
+
+        const newGroups = [...groups];
+        // Find student in source
+        const studentIndex = newGroups[sourceIndex].findIndex(s => s.id === studentId);
+        if (studentIndex === -1) return;
+
+        const [student] = newGroups[sourceIndex].splice(studentIndex, 1);
+        newGroups[targetGroupIndex].push(student);
+
+        updateData(widget.id, { groups: newGroups });
+        dragItem.current = null;
+        dragSourceGroup.current = null;
+      };
+
       // Calculate grid template based on dynamic columns
       const gridStyle = {
         display: 'grid',
@@ -1400,27 +1455,82 @@
         gap: '0.5rem'
       };
 
+      // Setup View (If no groups generated yet)
+      if (groups.length === 0) {
+        return (
+          <div className="flex flex-col h-full bg-white relative p-6 items-center justify-center text-center">
+            <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mb-4">
+              <Users size={32} />
+            </div>
+            <h3 className="font-bold text-lg text-slate-800 mb-2">Group Maker</h3>
+            <p className="text-slate-500 text-xs max-w-[200px] mb-6">Instantly split {count} students into random groups.</p>
+
+            <div className="w-full max-w-[240px] bg-slate-50 p-3 rounded-xl border border-slate-100 mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-bold text-slate-500 uppercase">Groups</span>
+                <span className="text-sm font-black text-slate-700">{groupCount}</span>
+              </div>
+              <input
+                type="range" min="2" max="12" value={groupCount}
+                onChange={e => updateData(widget.id, { groupCount: Number(e.target.value) })}
+                className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+              />
+              <div className="text-[10px] text-slate-400 mt-2 text-right">
+                ~{Math.ceil(count / groupCount)} students per group
+              </div>
+            </div>
+
+            <button
+              onClick={() => createGroups(groupCount)}
+              disabled={count === 0}
+              className="w-full max-w-[240px] py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Shuffle size={18} /> Generate Groups
+            </button>
+          </div>
+        );
+      }
+
       return (
-        <div className="flex flex-col h-full bg-gray-50 relative p-4">
+        <div className="flex flex-col h-full bg-slate-50 relative p-4">
           <div className="flex flex-col gap-2 flex-1 min-h-0">
             <div className="flex justify-between items-center mb-1 shrink-0">
               <div className="bg-white border border-gray-200 px-2 py-0.5 rounded-md shadow-sm">
                 <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Present: </span>
                 <span className="text-xs font-bold text-blue-600">{count}</span>
               </div>
+              <button onClick={() => updateData(widget.id, { groups: [] })} className="text-[10px] font-bold text-slate-400 hover:text-red-500 underline transition-colors">
+                Reset
+              </button>
             </div>
 
             <div ref={containerRef} className="overflow-y-auto content-start custom-scrollbar flex-1" style={gridStyle}>
-              {groups.length > 0 ? groups.map((g, i) => (
-                <div key={i} className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 min-h-[80px] flex flex-col">
-                  <div className="font-bold text-[10px] uppercase text-gray-400 mb-1 tracking-wider">Group {i + 1}</div>
-                  <div className="flex-1 space-y-0.5">
+              {groups.map((g, i) => (
+                <div
+                  key={i}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, i)}
+                  className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 min-h-[80px] flex flex-col transition-colors hover:bg-blue-50/30 group"
+                >
+                  <div className="flex justify-between items-center mb-1">
+                    <div className="font-bold text-[10px] uppercase text-gray-400 tracking-wider">Group {i + 1}</div>
+                    <div className="text-[9px] font-bold text-gray-300 bg-gray-50 px-1 rounded">{g.length}</div>
+                  </div>
+                  <div className="flex-1 space-y-0.5 min-h-[2rem]">
                     {g.map(s => (
-                      <div key={s.id} className="px-1.5 py-0.5 bg-gray-50 rounded flex items-center text-gray-700 font-medium truncate" style={{ fontSize: scaledFS + 'px' }}>{s.name}</div>
+                      <div
+                        key={s.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, s.id, i)}
+                        className="px-1.5 py-0.5 bg-gray-50 hover:bg-blue-100 rounded flex items-center text-gray-700 font-medium truncate cursor-grab active:cursor-grabbing border border-transparent hover:border-blue-200 transition-colors"
+                        style={{ fontSize: scaledFS + 'px' }}
+                      >
+                        {s.name}
+                      </div>
                     ))}
                   </div>
                 </div>
-              )) : <div className="col-span-full flex items-center justify-center text-gray-400 italic">No groups created</div>}
+              ))}
             </div>
 
             <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm mt-auto shrink-0">
@@ -1437,8 +1547,8 @@
                 }}
                 className="w-full accent-blue-600 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer mb-2"
               />
-              <button onClick={() => createGroups(groupCount)} className="w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors">
-                Shuffle Groups
+              <button onClick={() => createGroups(groupCount)} className="w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1">
+                <Shuffle size={14} /> Shuffle Groups
               </button>
             </div>
           </div>
@@ -1967,7 +2077,7 @@
       const { fontSize = 14 } = widget.data;
       const [dragIndex, setDragIndex] = useState(null);
       const [emojiPickerIndex, setEmojiPickerIndex] = useState(null);
-      const [timePickerIndex, setTimePickerIndex] = useState(null);
+      const [timePickerState, setTimePickerState] = useState({ index: null, triggerRef: null });
       const today = DAYS_OF_WEEK[new Date().getDay()];
       const [scheduleData, setScheduleData] = useState(() => { const template = getScheduleTemplate(); return template[today] || []; });
 
@@ -1978,9 +2088,9 @@
       }, [today]);
 
       useEffect(() => {
-        const handleClickOutside = () => { setEmojiPickerIndex(null); setTimePickerIndex(null); };
-        if (emojiPickerIndex !== null || timePickerIndex !== null) { document.addEventListener('click', handleClickOutside); return () => document.removeEventListener('click', handleClickOutside); }
-      }, [emojiPickerIndex, timePickerIndex]);
+        const handleClickOutside = () => { setEmojiPickerIndex(null); setTimePickerState({ index: null, triggerRef: null }); };
+        if (emojiPickerIndex !== null || timePickerState.index !== null) { document.addEventListener('click', handleClickOutside); return () => document.removeEventListener('click', handleClickOutside); }
+      }, [emojiPickerIndex, timePickerState.index]);
 
       const now = new Date();
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -2027,7 +2137,13 @@
                     {isCurrent && <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />}
 
                     <div className="flex flex-col items-center shrink-0 w-20 relative">
-                      <button onClick={(e) => { e.stopPropagation(); setTimePickerIndex(timePickerIndex === index ? null : index); }} className="w-full text-sm font-bold text-indigo-600 bg-white/50 border border-indigo-100 px-2 py-1 rounded hover:bg-indigo-50">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTimePickerState(timePickerState.index === index ? { index: null, triggerRef: null } : { index, triggerRef: { current: e.currentTarget } });
+                        }}
+                        className="w-full text-sm font-bold text-indigo-600 bg-white/50 border border-indigo-100 px-2 py-1 rounded hover:bg-indigo-50"
+                      >
                         {(() => {
                           const [h, m] = (item.time || '09:00').split(':');
                           const hours = parseInt(h);
@@ -2036,8 +2152,13 @@
                           return `${displayH}:${m} ${ampm}`;
                         })()}
                       </button>
-                      {timePickerIndex === index && (
-                        <TimePicker time={item.time || '09:00'} onChange={(t) => updateItem(index, 'time', t)} onClose={() => setTimePickerIndex(null)} />
+                      {timePickerState.index === index && (
+                        <TimePicker
+                          time={item.time || '09:00'}
+                          onChange={(t) => updateItem(index, 'time', t)}
+                          onClose={() => setTimePickerState({ index: null, triggerRef: null })}
+                          triggerRef={timePickerState.triggerRef}
+                        />
                       )}
                     </div>
 
@@ -2412,7 +2533,7 @@
       );
     };
 
-    const SettingsModal = ({ onClose, onSave, downloadData, uploadData, roster, allRosters, activeRosterId, onSetActiveRoster, onAddRoster, onDeleteRoster, onRenameRoster, fileInputRef, initialTab = 'roster', isGridEnabled, onToggleGrid, currentBg, onBgSelect, myBackgrounds, onAddCustomBg, onDeleteCustomBg, backupEnabled, setBackupEnabled, backupInterval, setBackupInterval, settingsTimePickerIndex, setSettingsTimePickerIndex }) => {
+    const SettingsModal = ({ onClose, onSave, downloadData, roster, allRosters, activeRosterId, onSetActiveRoster, onAddRoster, onDeleteRoster, onRenameRoster, fileInputRef, initialTab = 'roster', isGridEnabled, onToggleGrid, currentBg, onBgSelect, myBackgrounds, onAddCustomBg, onDeleteCustomBg, backupEnabled, setBackupEnabled, backupInterval, setBackupInterval }) => {
       const [activeTab, setActiveTab] = useState(initialTab);
       const [mode, setMode] = useState('list');
 
@@ -2487,7 +2608,9 @@
       const [showCopyMenu, setShowCopyMenu] = useState(false);
       const [copyStatus, setCopyStatus] = useState('');
       const [copyTargetDays, setCopyTargetDays] = useState([]);
+
       const [showRosterMenu, setShowRosterMenu] = useState(false); // Item 13 Custom Dropdown State
+      const [settingsTimePickerState, setSettingsTimePickerState] = useState({ index: null, triggerRef: null });
 
       const copyScheduleDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].filter(d => d !== selectedDay);
 
@@ -2761,9 +2884,15 @@
                   {/* Activities for selected day */}
                   <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                     {(scheduleTemplate[selectedDay] || []).map((item, index) => (
-                      <div key={item.id} className="relative flex gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200" style={{ zIndex: (settingsEmojiPickerIndex === index || settingsTimePickerIndex === index) ? 50 : 0 }}>
+                      <div key={item.id} className="relative flex gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200" style={{ zIndex: (settingsEmojiPickerIndex === index || settingsTimePickerState.index === index) ? 50 : 0 }}>
                         <div className="flex flex-col items-center shrink-0 w-20 relative">
-                          <button onClick={(e) => { e.stopPropagation(); setSettingsTimePickerIndex(settingsTimePickerIndex === index ? null : index); }} className="w-full text-xs font-bold text-indigo-600 bg-white border border-indigo-100 px-1 py-1 rounded hover:bg-indigo-50">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSettingsTimePickerState(settingsTimePickerState.index === index ? { index: null, triggerRef: null } : { index, triggerRef: { current: e.currentTarget } });
+                            }}
+                            className="w-full text-xs font-bold text-indigo-600 bg-white border border-indigo-100 px-1 py-1 rounded hover:bg-indigo-50"
+                          >
                             {(() => {
                               const [h, m] = (item.time || '09:00').split(':');
                               const hours = parseInt(h);
@@ -2772,8 +2901,13 @@
                               return `${displayH}:${m} ${ampm}`;
                             })()}
                           </button>
-                          {settingsTimePickerIndex === index && (
-                            <TimePicker time={item.time || '09:00'} onChange={(t) => updateScheduleItem(selectedDay, index, 'time', t)} onClose={() => setSettingsTimePickerIndex(null)} />
+                          {settingsTimePickerState.index === index && (
+                            <TimePicker
+                              time={item.time || '09:00'}
+                              onChange={(t) => updateScheduleItem(selectedDay, index, 'time', t)}
+                              onClose={() => setSettingsTimePickerState({ index: null, triggerRef: null })}
+                              triggerRef={settingsTimePickerState.triggerRef}
+                            />
                           )}
                         </div>
                         <div className="relative">
@@ -3069,7 +3203,7 @@
       const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
       const [selectedId, setSelectedId] = useState(null);
       const [spotlightId, setSpotlightId] = useState(null);
-      const [settingsTimePickerIndex, setSettingsTimePickerIndex] = useState(null); // Settings Schedule UI
+
       const [maxZIndex, setMaxZIndex] = useState(10);
       const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }));
       const [isDockMinimized, setIsDockMinimized] = useState(false);
@@ -3433,7 +3567,7 @@
             onDragStart={(e) => {
               e.dataTransfer.setData('widgetType', id);
               // Rotation Snap Effect for GHOST
-              e.currentTarget.style.transform = "none";
+              e.currentTarget.style.transform = "rotate(5deg) scale(1.1)";
               // Hide source immediately after ghost generation
               requestAnimationFrame(() => {
                 e.target.classList.add('opacity-0');
@@ -3497,7 +3631,6 @@
             onClose={() => { setShowSettingsModal(false); setSettingsInitialTab('roster'); }}
             onSave={(newRoster) => { setRoster(newRoster); }}
             downloadData={downloadData}
-            uploadData={uploadData}
             fileInputRef={fileInputRef}
             initialTab={settingsInitialTab}
             isGridEnabled={isGridEnabled}
@@ -3511,8 +3644,6 @@
             setBackupEnabled={setBackupEnabled}
             backupInterval={backupInterval}
             setBackupInterval={setBackupInterval}
-            settingsTimePickerIndex={settingsTimePickerIndex}
-            setSettingsTimePickerIndex={setSettingsTimePickerIndex}
           />}
           <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={uploadData} />
 
@@ -3693,7 +3824,7 @@
       );
     };
 
-    const ToolBtn = ({ icon, label, onClick, isEditing, index, moveTool }) => { const handleDragStart = (e) => { if (!isEditing) return; e.dataTransfer.setData('text/plain', index); e.dataTransfer.effectAllowed = 'move'; }; const handleDragOver = (e) => { if (!isEditing) return; e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }; const handleDrop = (e) => { if (!isEditing || !moveTool) return; e.preventDefault(); moveTool(e, index); }; return <button onClick={onClick} draggable={isEditing} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} className={`flex flex-col items-center justify-center min-w-[55px] px-1.5 py-2 rounded-xl group transition-all duration-200 active:scale-95 ${isEditing ? 'cursor-move bg-blue-100/50 hover:bg-blue-200 border border-blue-200 hover:rotate-3' : 'hover:bg-blue-50'}`}><div className={`text-gray-500 group-hover:text-blue-600 mb-0.5 transition-colors p-1.5 bg-transparent group-hover:bg-white rounded-full shadow-none group-hover:shadow-sm ${isEditing ? 'text-blue-500' : ''}`}>{React.cloneElement(icon, { size: 20 })}</div><span className={`text-[9px] font-bold uppercase tracking-wide ${isEditing ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'}`}>{label}</span></button>; };
+
 
     const root = createRoot(document.getElementById('root')); root.render(<App />);
   </script>
