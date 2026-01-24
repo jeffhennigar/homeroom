@@ -91,7 +91,7 @@
       Save, AlertCircle, AlertTriangle, Share2, Edit3, Layout, User, MoreVertical, MoreHorizontal, Briefcase,
       RotateCw, Lock, Unlock, Grip, Palette, Image as ImageIcon, UploadCloud, Grid,
       Sun, Moon, BarChart2, Italic, Underline, AlignLeft, Clock, Smile,
-      Volume2, VolumeX, Download, Upload, Check, Info, ExternalLink, Mail, Calendar, Youtube, Lightbulb, MousePointer2, Undo2, Redo2, ArrowRightSquare, QrCode, Bell, StickyNote
+      Volume2, VolumeX, Download, Upload, Check, Info, ExternalLink, Mail, Calendar, Youtube, Lightbulb, MousePointer2, Undo2, Redo2, ArrowRightSquare, QrCode, Bell, StickyNote, PieChart, Hash, Timer as TimerIcon
     } from 'lucide-react';
 
     // --- CONSTANTS ---
@@ -116,7 +116,8 @@
     );
 
     const DOCK_LABELS = {
-      TIMER: { label: 'Timer', icon: <Timer /> },
+      TIMER: { label: 'Timers', icon: <TimerIcon /> },
+      CLOCK: { label: 'Clock', icon: <Clock /> },
       RANDOMIZER: { label: 'Random', icon: <Shuffle /> },
       GROUP_MAKER: { label: 'Groups', icon: <Users /> },
       SEAT_PICKER: { label: 'Seats', icon: <Armchair /> },
@@ -136,12 +137,12 @@
     // --- BACKGROUND PRESETS (UPDATED) ---
     const BACKGROUNDS = [
       { id: 'default', name: 'Original', type: 'preset', preview: 'bg-gradient-to-br from-blue-200 to-orange-200', style: {}, textColor: 'text-slate-800' },
-      { id: 'forest', name: 'Forest', type: 'image', src: 'https://images.unsplash.com/photo-1622572860925-daa5e4219d53?q=80&w=1674&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', textColor: 'text-white' },
-      { id: 'ocean', name: 'Ocean', type: 'image', src: 'https://images.pexels.com/photos/1032650/pexels-photo-1032650.jpeg?auto=compress&cs=tinysrgb&w=1920', textColor: 'text-slate-800' },
-      { id: 'sunset', name: 'Sunset', type: 'image', src: 'https://images.unsplash.com/photo-1503803548695-c2a7b4a5b875?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', textColor: 'text-white' },
-      { id: 'galaxy', name: 'Galaxy', type: 'image', src: 'https://images.unsplash.com/photo-1464802686167-b939a6910659?q=80&w=1750&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', textColor: 'text-white' },
-      { id: 'puppy', name: 'Puppy', type: 'image', src: 'https://hips.hearstapps.com/hmg-prod/images/dog-puppy-on-garden-royalty-free-image-1586966191.jpg?crop=1xw:0.74975xh;0,0.190xh', textColor: 'text-white' },
-      { id: 'kitten', name: 'Kitten', type: 'image', src: 'https://www.vets4pets.com/siteassets/species/cat/kitten/tiny-kitten-in-sunlight.jpg', textColor: 'text-white' },
+      { id: 'forest', name: 'Forest', type: 'image', src: 'https://images.unsplash.com/photo-1622572860925-daa5e4219d53?q=80&w=1674&auto=format&fit=crop', textColor: 'text-white' },
+      { id: 'ocean', name: 'Ocean', type: 'image', src: 'https://images.unsplash.com/photo-1439405326854-014607f694d7?auto=format&fit=crop&w=1920&q=80', textColor: 'text-white' },
+      { id: 'sunset', name: 'Sunset', type: 'image', src: 'https://images.unsplash.com/photo-1503803548695-c2a7b4a5b875?q=80&w=1770&auto=format&fit=crop', textColor: 'text-white' },
+      { id: 'galaxy', name: 'Galaxy', type: 'image', src: 'https://images.unsplash.com/photo-1464802686167-b939a6910659?q=80&w=1750&auto=format&fit=crop', textColor: 'text-white' },
+      { id: 'puppy', name: 'Puppy', type: 'image', src: 'https://images.unsplash.com/photo-1591160690555-5debfba289f0?auto=format&fit=crop&w=1920&q=80', textColor: 'text-white' },
+      { id: 'kitten', name: 'Kitten', type: 'image', src: 'https://images.unsplash.com/photo-1595433707802-6b2626ef1c91?auto=format&fit=crop&w=1920&q=80', textColor: 'text-white' },
       { id: 'aurora', name: 'Aurora', type: 'image', src: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1920&q=80', textColor: 'text-white' },
     ];
 
@@ -201,9 +202,10 @@
     const WIDGET_SIZES = {
 
       TIMER: { width: 280, height: 340 },
+      CLOCK: { width: 340, height: 260 },
       RANDOMIZER: { width: 250, height: 250 },
       GROUP_MAKER: { width: 600, height: 400 },
-      SEAT_PICKER: { width: 900, height: 600 },
+      SEAT_PICKER: { width: 900, height: 530 },
       TEXT: { width: 340, height: 260 },
       WEBCAM: { width: 320, height: 240 },
       DICE: { width: 300, height: 320 },
@@ -297,27 +299,29 @@
       if (style === 'none') return null;
 
       const renderAnalog = () => (
-        <div className={`relative w-48 h-48 rounded-full border-4 backdrop-blur-md shadow-lg ${textColor === 'text-white' ? 'border-white/50 bg-white/10' : 'border-slate-800/20 bg-white/60'}`}>
-          {/* Ticks */}
-          {[...Array(12)].map((_, i) => (
-            <div
-              key={i}
-              className={`absolute w-1 h-3 left-1/2 top-1/2 ${textColor === 'text-white' ? 'bg-white/60' : 'bg-slate-800/60'}`}
-              style={{
-                marginLeft: '-2px', // half of w-1 (4px) -> 2px
-                marginTop: '-6px', // half of h-3 (12px) -> 6px
-                transform: `rotate(${i * 30}deg) translateY(-85px)`,
-              }}
-            />
-          ))}
-          {/* Hands */}
-          <div className={`absolute w-1.5 h-14 rounded-full origin-bottom left-1/2 bottom-1/2 -translate-x-1/2 ${textColor === 'text-white' ? 'bg-white' : 'bg-slate-800'}`} style={{ transform: `rotate(${getRotation(hours % 12 + minutes / 60, 12)}deg)` }} />
-          <div className={`absolute w-1 h-20 rounded-full origin-bottom left-1/2 bottom-1/2 -translate-x-1/2 ${textColor === 'text-white' ? 'bg-white/80' : 'bg-slate-800/80'}`} style={{ transform: `rotate(${getRotation(minutes, 60)}deg)` }} />
-          <div className="absolute w-0.5 h-20 bg-red-400 rounded-full origin-bottom left-1/2 bottom-1/2 -translate-x-1/2" style={{ transform: `rotate(${getRotation(seconds, 60)}deg)` }} />
-          <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full z-10 shadow-sm ${textColor === 'text-white' ? 'bg-white' : 'bg-slate-800'}`} />
-
-          {/* Moved date further down to bottom-20 (approx 5rem from bottom) */}
-          <div className={`absolute -bottom-16 left-0 right-0 text-center text-lg font-medium opacity-90 whitespace-nowrap ${textColor} drop-shadow-md`}>{dateString}</div>
+        <div className={`flex flex-col items-center justify-center gap-2`}>
+          <div className={`relative w-48 h-48 rounded-full border-4 backdrop-blur-md shadow-lg flex items-center justify-center ${textColor === 'text-white' ? 'border-white/50 bg-white/10' : 'border-slate-800/20 bg-white/60'}`}>
+            {/* Ticks */}
+            {[...Array(12)].map((_, i) => (
+              <div
+                key={i}
+                className={`absolute w-1 h-3 ${textColor === 'text-white' ? 'bg-white/60' : 'bg-slate-800/60'}`}
+                style={{
+                  transform: `rotate(${i * 30}deg) translateY(-85px)`,
+                }}
+              />
+            ))}
+            {/* Hour Hand */}
+            <div className={`absolute w-1.5 h-12 rounded-full origin-bottom left-1/2 bottom-1/2 -ml-[3px] ${textColor === 'text-white' ? 'bg-white' : 'bg-slate-800'}`} style={{ transform: `rotate(${getRotation(hours % 12 + minutes / 60, 12)}deg)` }} />
+            {/* Minute Hand */}
+            <div className={`absolute w-1 h-16 rounded-full origin-bottom left-1/2 bottom-1/2 -ml-[2px] ${textColor === 'text-white' ? 'bg-white/80' : 'bg-slate-800/80'}`} style={{ transform: `rotate(${getRotation(minutes, 60)}deg)` }} />
+            {/* Second Hand */}
+            <div className="absolute w-0.5 h-16 bg-red-400 rounded-full origin-bottom left-1/2 bottom-1/2 -ml-[1px]" style={{ transform: `rotate(${getRotation(seconds, 60)}deg)` }} />
+            {/* Center Dot */}
+            <div className={`absolute w-3 h-3 rounded-full z-10 shadow-sm ${textColor === 'text-white' ? 'bg-white' : 'bg-slate-800'}`} />
+          </div>
+          {/* Date below analog clock */}
+          <div className={`text-lg font-medium opacity-90 whitespace-nowrap ${textColor} drop-shadow-md text-center`}>{dateString}</div>
         </div>
       );
 
@@ -341,19 +345,21 @@
       const renderRetro = () => null; // Deprecated
 
       const renderModernAnalog = () => (
-        <div className={`relative w-56 h-56 backdrop-blur-md rounded-3xl shadow-xl flex flex-col items-center justify-center border ${textColor === 'text-white' ? 'bg-white/10 border-white/20' : 'bg-white/80 border-slate-200'}`}>
-          <div className="relative w-full flex-1">
-            {/* Markers */}
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className={`absolute w-1.5 h-4 rounded-full left-1/2 top-1/2 -ml-0.5 -mt-2 ${textColor === 'text-white' ? 'bg-white/80' : 'bg-slate-800/80'}`} style={{ transform: `rotate(${i * 90}deg) translateY(-80px)` }} />
-            ))}
-            {/* Hands */}
-            <div className={`absolute w-2 h-16 rounded-full shadow-sm origin-bottom left-1/2 bottom-1/2 -translate-x-1/2 ${textColor === 'text-white' ? 'bg-white' : 'bg-slate-800'}`} style={{ transform: `rotate(${getRotation(hours % 12 + minutes / 60, 12)}deg)` }} />
-            <div className="absolute w-1.5 h-20 bg-blue-400 rounded-full shadow-sm origin-bottom left-1/2 bottom-1/2 -translate-x-1/2 opacity-90" style={{ transform: `rotate(${getRotation(minutes, 60)}deg)` }} />
-            <div className="absolute w-1 h-20 bg-red-400 rounded-full shadow-sm origin-bottom left-1/2 bottom-1/2 -translate-x-1/2" style={{ transform: `rotate(${getRotation(seconds, 60)}deg)` }} />
-            <div className={`absolute w-4 h-4 rounded-full z-10 shadow-md left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${textColor === 'text-white' ? 'bg-white' : 'bg-slate-800'}`} />
+        <div className={`flex flex-col items-center justify-center gap-4`}>
+          <div className={`relative w-56 h-56 backdrop-blur-md rounded-3xl shadow-xl flex items-center justify-center border ${textColor === 'text-white' ? 'bg-white/10 border-white/20' : 'bg-white/80 border-slate-200'}`}>
+            <div className="relative w-full h-full flex items-center justify-center">
+              {/* Markers */}
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className={`absolute w-1.5 h-4 rounded-full ${textColor === 'text-white' ? 'bg-white/80' : 'bg-slate-800/80'}`} style={{ transform: `rotate(${i * 90}deg) translateY(-80px)` }} />
+              ))}
+              {/* Hands */}
+              <div className={`absolute w-2 h-16 rounded-full shadow-sm origin-bottom bottom-1/2 -ml-[4px] ${textColor === 'text-white' ? 'bg-white' : 'bg-slate-800'}`} style={{ transform: `rotate(${getRotation(hours % 12 + minutes / 60, 12)}deg)` }} />
+              <div className="absolute w-1.5 h-20 bg-blue-400 rounded-full shadow-sm origin-bottom bottom-1/2 -ml-[3px] opacity-90" style={{ transform: `rotate(${getRotation(minutes, 60)}deg)` }} />
+              <div className="absolute w-1 h-20 bg-red-400 rounded-full shadow-sm origin-bottom bottom-1/2 -ml-[2px]" style={{ transform: `rotate(${getRotation(seconds, 60)}deg)` }} />
+              <div className={`absolute w-4 h-4 rounded-full z-10 shadow-md ${textColor === 'text-white' ? 'bg-white' : 'bg-slate-800'}`} />
+            </div>
           </div>
-          <div className={`text-sm font-bold uppercase tracking-widest mb-4 opacity-80 ${textColor}`}>{dateString}</div>
+          <div className={`text-sm font-bold uppercase tracking-widest opacity-80 text-center ${textColor}`}>{dateString}</div>
         </div>
       );
 
@@ -1142,7 +1148,7 @@
           dataArrayRef.current = new Uint8Array(bufferLength);
           analyze();
         } catch (e) {
-          console.error(e);
+          console.error('Mic Error: ' + e.message);
           alert('Mic Error: ' + e.message);
           updateData(widget.id, { isListening: false });
         }
@@ -1280,15 +1286,15 @@
 
     const GRID_SIZE = 20;
     const HEADER_HEIGHT = 40;
-    const WIDGET_TYPE_LABELS = { TIMER: 'Timer', RANDOMIZER: 'Random', GROUP_MAKER: 'Groups', SEAT_PICKER: 'Seats', TEXT: 'Notes', WEBCAM: 'Cam', DICE: 'Dice', TRAFFIC: 'Noise', QR: 'QR Code', VOTE: 'Poll', WHITEBOARD: 'Draw', SCHEDULE: 'Schedule', YOUTUBE: 'Embed' };
+    const WIDGET_TYPE_LABELS = { TIMER: 'Timers', RANDOMIZER: 'Random', GROUP_MAKER: 'Groups', SEAT_PICKER: 'Seats', TEXT: 'Notes', WEBCAM: 'Cam', DICE: 'Dice', TRAFFIC: 'Noise', QR: 'QR Code', VOTE: 'Poll', WHITEBOARD: 'Draw', SCHEDULE: 'Schedule', YOUTUBE: 'Embed', CLOCK: 'Clock' };
 
     // --- UTILS ---
-    const DraggableResizable = ({ id, position, size, zIndex, isSelected, isMinimized = false, isSpotlighted = false, isGridEnabled = false, widgetType, onUpdate, onSelect, onRemove, onFontSizeChange, onMinimizeToggle, onSpotlight, children, chromeless = false }) => {
-      const [isDragging, setIsDragging] = useState(false); const [isResizing, setIsResizing] = useState(false); const startMousePos = useRef({ x: 0, y: 0 }); const startWidgetPos = useRef({ x: 0, y: 0 }); const startWidgetSize = useRef({ width: 0, height: 0 }); const onUpdateRef = useRef(onUpdate); const positionRef = useRef(position); const sizeRef = useRef(size); useEffect(() => { onUpdateRef.current = onUpdate; positionRef.current = position; sizeRef.current = size; }, [onUpdate, position, size]);
+    const DraggableResizable = ({ id, position, size, zIndex, isSelected, isMinimized = false, isSpotlighted = false, isGridEnabled = false, widgetType, onUpdate, onSelect, onRemove, onFontSizeChange, onMinimizeToggle, onSpotlight, onSettings, children, chromeless = false }) => {
+      const [isDragging, setIsDragging] = useState(false); const [isResizing, setIsResizing] = useState(false); const [resizeDirection, setResizeDirection] = useState(null); const startMousePos = useRef({ x: 0, y: 0 }); const startWidgetPos = useRef({ x: 0, y: 0 }); const startWidgetSize = useRef({ width: 0, height: 0 }); const onUpdateRef = useRef(onUpdate); const positionRef = useRef(position); const sizeRef = useRef(size); useEffect(() => { onUpdateRef.current = onUpdate; positionRef.current = position; sizeRef.current = size; }, [onUpdate, position, size]);
       const handleMouseDown = (e) => { e.stopPropagation(); onSelect(id); setIsDragging(true); startMousePos.current = { x: e.clientX, y: e.clientY }; startWidgetPos.current = { ...position }; };
-      const handleResizeStart = (e) => { if (isMinimized) return; e.stopPropagation(); e.preventDefault(); onSelect(id); setIsResizing(true); startMousePos.current = { x: e.clientX, y: e.clientY }; startWidgetPos.current = { ...position }; startWidgetSize.current = { ...size }; };
+      const handleResizeStart = (e, direction) => { if (isMinimized) return; e.stopPropagation(); e.preventDefault(); onSelect(id); setIsResizing(true); setResizeDirection(direction); startMousePos.current = { x: e.clientX, y: e.clientY }; startWidgetPos.current = { ...position }; startWidgetSize.current = { ...size }; };
 
-      useEffect(() => { if (!isDragging && !isResizing) return; const handleMouseMove = (e) => { e.preventDefault(); const dx = e.clientX - startMousePos.current.x; const dy = e.clientY - startMousePos.current.y; if (isDragging) { let newX = startWidgetPos.current.x + dx; let newY = startWidgetPos.current.y + dy; if (isGridEnabled) { newX = Math.round(newX / GRID_SIZE) * GRID_SIZE; newY = Math.round(newY / GRID_SIZE) * GRID_SIZE; } onUpdateRef.current(id, { x: newX, y: newY }, sizeRef.current); } else if (isResizing) { let newWidth = Math.max(200, startWidgetSize.current.width + dx); let newHeight = Math.max(100, startWidgetSize.current.height + dy); if (isGridEnabled) { newWidth = Math.round(newWidth / GRID_SIZE) * GRID_SIZE; newHeight = Math.round(newHeight / GRID_SIZE) * GRID_SIZE; } onUpdateRef.current(id, positionRef.current, { width: newWidth, height: newHeight }); } }; const handleMouseUp = () => { if (isDragging) { const snappedX = Math.round(positionRef.current.x / GRID_SIZE) * GRID_SIZE; const snappedY = Math.round(positionRef.current.y / GRID_SIZE) * GRID_SIZE; onUpdateRef.current(id, { x: snappedX, y: snappedY }, sizeRef.current); } if (isResizing && isGridEnabled) { const snappedW = Math.round(sizeRef.current.width / GRID_SIZE) * GRID_SIZE; const snappedH = Math.round(sizeRef.current.height / GRID_SIZE) * GRID_SIZE; onUpdateRef.current(id, positionRef.current, { width: Math.max(200, snappedW), height: Math.max(100, snappedH) }); } setIsDragging(false); setIsResizing(false); }; window.addEventListener('mousemove', handleMouseMove); window.addEventListener('mouseup', handleMouseUp); return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); }; }, [isDragging, isResizing, id, isGridEnabled]);
+      useEffect(() => { if (!isDragging && !isResizing) return; const handleMouseMove = (e) => { e.preventDefault(); const dx = e.clientX - startMousePos.current.x; const dy = e.clientY - startMousePos.current.y; if (isDragging) { let newX = startWidgetPos.current.x + dx; let newY = startWidgetPos.current.y + dy; if (isGridEnabled) { newX = Math.round(newX / GRID_SIZE) * GRID_SIZE; newY = Math.round(newY / GRID_SIZE) * GRID_SIZE; } onUpdateRef.current(id, { x: newX, y: newY }, sizeRef.current); } else if (isResizing) { let newWidth = startWidgetSize.current.width; let newHeight = startWidgetSize.current.height; let newX = startWidgetPos.current.x; let newY = startWidgetPos.current.y; const dir = resizeDirection; if (dir.includes('e')) { newWidth = Math.max(200, startWidgetSize.current.width + dx); } if (dir.includes('w')) { newWidth = Math.max(200, startWidgetSize.current.width - dx); newX = startWidgetPos.current.x + dx; if (newWidth === 200) newX = startWidgetPos.current.x + startWidgetSize.current.width - 200; } if (dir.includes('s')) { newHeight = Math.max(100, startWidgetSize.current.height + dy); } if (dir.includes('n')) { newHeight = Math.max(100, startWidgetSize.current.height - dy); newY = startWidgetPos.current.y + dy; if (newHeight === 100) newY = startWidgetPos.current.y + startWidgetSize.current.height - 100; } if (isGridEnabled) { newWidth = Math.round(newWidth / GRID_SIZE) * GRID_SIZE; newHeight = Math.round(newHeight / GRID_SIZE) * GRID_SIZE; } onUpdateRef.current(id, { x: newX, y: newY }, { width: newWidth, height: newHeight }); } }; const handleMouseUp = () => { if (isDragging) { const snappedX = Math.round(positionRef.current.x / GRID_SIZE) * GRID_SIZE; const snappedY = Math.round(positionRef.current.y / GRID_SIZE) * GRID_SIZE; onUpdateRef.current(id, { x: snappedX, y: snappedY }, sizeRef.current); } if (isResizing && isGridEnabled) { const snappedW = Math.round(sizeRef.current.width / GRID_SIZE) * GRID_SIZE; const snappedH = Math.round(sizeRef.current.height / GRID_SIZE) * GRID_SIZE; onUpdateRef.current(id, positionRef.current, { width: Math.max(200, snappedW), height: Math.max(100, snappedH) }); } setIsDragging(false); setIsResizing(false); setResizeDirection(null); }; window.addEventListener('mousemove', handleMouseMove); window.addEventListener('mouseup', handleMouseUp); return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); }; }, [isDragging, isResizing, id, isGridEnabled, resizeDirection]);
       const displayHeight = isMinimized ? HEADER_HEIGHT : size.height;
       const widgetLabel = WIDGET_TYPE_LABELS[widgetType] || widgetType || '';
       const computedZIndex = isSpotlighted ? 10000 : (isSelected ? 9999 : (zIndex + 100));
@@ -1305,19 +1311,35 @@
         ? (isSelected ? 'border-2 border-blue-500 shadow-2xl' : 'border-0 border-transparent')
         : (isSelected ? 'border-blue-500 shadow-2xl' : 'border-gray-100');
 
-      return (<div className={`absolute flex flex-col ${chromeless ? '' : 'bg-white rounded-xl shadow-xl border-2 overflow-hidden'} pointer-events-auto ${isDragging || isResizing ? '' : 'transition-all duration-200'} ${borderClass} ${isSpotlighted ? 'shadow-[0_0_80px_20px_rgba(255,255,255,0.3)]' : ''}`} style={{ left: position.x, top: position.y, width: size.width, height: displayHeight, zIndex: computedZIndex, touchAction: 'none', ...containerStyle }} onMouseDown={() => { if (!isSelected) onSelect(id); }}>
+      return (<div className={`absolute flex flex-col ${chromeless ? '' : 'bg-white rounded-xl shadow-xl border-2 overflow-hidden'} pointer-events-auto ${isDragging || isResizing ? '' : 'transition-all duration-200'} ${borderClass} ${isSpotlighted ? 'shadow-[0_0_80px_20px_rgba(255,255,255,0.3)]' : ''}`} style={{ left: position.x, top: position.y, width: size.width, height: displayHeight, zIndex: computedZIndex, touchAction: 'none', ...containerStyle }} onMouseDown={(e) => { if (!isSelected) onSelect(id); if (chromeless) handleMouseDown(e); }}>
         {!chromeless && <div className="h-10 bg-gray-50 flex items-center justify-between px-2 cursor-move border-b border-gray-100 group select-none flex-shrink-0 relative" onMouseDown={handleMouseDown}> <div className="flex items-center gap-1 z-10"> {onFontSizeChange && (<><button onClick={(e) => { e.stopPropagation(); onFontSizeChange?.(-2); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"><Minus size={14} strokeWidth={3} /></button> <button onClick={(e) => { e.stopPropagation(); onFontSizeChange?.(2); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"><Plus size={14} strokeWidth={3} /></button></>)} </div> <div className="absolute inset-0 flex items-center justify-center pointer-events-none">{isMinimized ? <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{widgetLabel}</span> : <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-1.5 bg-gray-300 rounded-full group-hover:bg-blue-400 transition-colors pointer-events-auto" />}</div> <div className="flex items-center gap-1 z-10"> {onSpotlight && (<button onClick={(e) => { e.stopPropagation(); onSpotlight(id); }} className={`p-1 rounded transition-colors ${isSpotlighted ? 'text-yellow-500 bg-yellow-100' : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50'}`} title="Spotlight"> <Lightbulb size={14} /> </button>)} {onMinimizeToggle && (<button onClick={(e) => { e.stopPropagation(); onMinimizeToggle(id); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors" title={isMinimized ? "Restore" : "Minimize"}> <span className="font-bold text-sm leading-none">{isMinimized ? '+' : '−'}</span> </button>)} <button onClick={(e) => { e.stopPropagation(); onRemove(id); }} className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> </button> </div> </div>}
 
         {chromeless && isSelected && (
-          <div className="absolute -top-8 right-0 flex gap-1 animate-in fade-in slide-in-from-bottom-2 z-50">
-            <button onMouseDown={handleMouseDown} className="p-1.5 bg-white shadow-md rounded-lg text-slate-500 hover:text-blue-600 cursor-move" title="Drag"><GripHorizontal size={16} /></button>
-            <button onClick={(e) => { e.stopPropagation(); onRemove(id); }} className="p-1.5 bg-white shadow-md rounded-lg text-red-400 hover:text-red-600" title="Delete"><Trash2 size={16} /></button>
+          <div className="absolute top-2 right-2 flex gap-1 z-50">
+            {widgetType === 'CLOCK' && (
+              <button onClick={(e) => { e.stopPropagation(); onSettings?.(id); }} className="p-1.5 bg-white shadow-md rounded-full text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Clock Settings"><Settings size={14} /></button>
+            )}
+            <button onClick={(e) => { e.stopPropagation(); onRemove(id); }} className="p-1.5 bg-white shadow-md rounded-full text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Delete"><X size={14} /></button>
           </div>
         )}
 
         <div className={`flex-1 relative flex flex-col custom-scrollbar ${chromeless ? '' : 'overflow-hidden'}`} style={contentStyle}>{children}</div>
 
-        {!isMinimized && <div className={`absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize flex items-end justify-end p-1 transition-opacity z-10 ${chromeless ? (isSelected ? 'opacity-100' : 'opacity-0 hover:opacity-100') : 'opacity-0 hover:opacity-100 bg-gradient-to-tl from-gray-100 to-transparent'}`} onMouseDown={handleResizeStart}> <Maximize2 size={16} className={`${chromeless ? 'text-blue-400' : 'text-gray-400'} transform rotate-90`} /> </div>}
+        {!isMinimized && isSelected && (
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            {/* Corner handles - dots (Larger hit area with p-1 bg-clip-content) */}
+            <div className="absolute top-0 left-0 w-4 h-4 bg-blue-500 rounded-full cursor-nwse-resize z-20 p-1 bg-clip-content" onMouseDown={(e) => handleResizeStart(e, 'nw')} style={{ transform: 'translate(-50%, -50%)' }} />
+            <div className="absolute top-0 right-0 w-4 h-4 bg-blue-500 rounded-full cursor-nesw-resize z-20 p-1 bg-clip-content" onMouseDown={(e) => handleResizeStart(e, 'ne')} style={{ transform: 'translate(50%, -50%)' }} />
+            <div className="absolute bottom-0 left-0 w-4 h-4 bg-blue-500 rounded-full cursor-nesw-resize z-20 p-1 bg-clip-content" onMouseDown={(e) => handleResizeStart(e, 'sw')} style={{ transform: 'translate(-50%, 50%)' }} />
+            <div className="absolute bottom-0 right-0 w-4 h-4 bg-blue-500 rounded-full cursor-nwse-resize z-20 p-1 bg-clip-content" onMouseDown={(e) => handleResizeStart(e, 'se')} style={{ transform: 'translate(50%, 50%)' }} />
+
+            {/* Edge handles - dashes (Larger hit area) */}
+            <div className="absolute top-0 left-1/2 w-8 h-4 bg-blue-500 rounded-sm cursor-ns-resize z-20 p-1 bg-clip-content" onMouseDown={(e) => handleResizeStart(e, 'n')} style={{ transform: 'translate(-50%, -50%)' }} />
+            <div className="absolute bottom-0 left-1/2 w-8 h-4 bg-blue-500 rounded-sm cursor-ns-resize z-20 p-1 bg-clip-content" onMouseDown={(e) => handleResizeStart(e, 's')} style={{ transform: 'translate(-50%, 50%)' }} />
+            <div className="absolute top-1/2 left-0 w-4 h-8 bg-blue-500 rounded-sm cursor-ew-resize z-20 p-1 bg-clip-content" onMouseDown={(e) => handleResizeStart(e, 'w')} style={{ transform: 'translate(-50%, -50%)' }} />
+            <div className="absolute top-1/2 right-0 w-4 h-8 bg-blue-500 rounded-sm cursor-ew-resize z-20 p-1 bg-clip-content" onMouseDown={(e) => handleResizeStart(e, 'e')} style={{ transform: 'translate(50%, -50%)' }} />
+          </div>
+        )}
       </div>);
     };
 
@@ -1389,6 +1411,30 @@
       );
     };
 
+    const ClockWidget = ({ widget, updateData }) => {
+      const { clockStyle, setClockStyle } = widget.extraProps || {};
+      const { fontSize = 16 } = widget.data;
+
+      return (
+        <div className="w-full h-full flex items-center justify-center relative group">
+          {/* Settings Button for Clock Widget */}
+          <button
+            onClick={(e) => { e.stopPropagation(); widget.onOpenSettings(); }}
+            className="absolute top-0 right-0 p-2 text-slate-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+          >
+            <Settings size={16} />
+          </button>
+          <div style={{ transform: `scale(${fontSize / 16})` }}>
+            <ClockDisplay
+              style={clockStyle || 'standard'}
+              textColor={'text-slate-800'}
+              onSettingsClick={() => { }}
+            />
+          </div>
+        </div>
+      );
+    };
+
     const TimerWidget = ({ widget, updateData }) => {
       const { durationMinutes = 2, timeLeft = 120, isRunning = false, fontSize = 16, mode = 'visual', color = 'blue', isMuted = false } = widget.data;
       const [customTime, setCustomTime] = useState("");
@@ -1410,24 +1456,75 @@
       const playAlarm = () => {
         if (isMuted) return;
         try {
-          // Wind chime sound
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          const ctx = new AudioContext();
+          if (ctx.state === 'suspended') ctx.resume();
+
+          const frequencies = [1046.50, 1174.66, 1318.51, 1567.98, 1760.00, 2093.00, 2349.32]; // C6 Pentatonic + high F
+
+          frequencies.forEach((freq, i) => {
+            const delay = Math.random() * 0.3 + (i * 0.1);
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+
+            // Envelope
+            gain.gain.setValueAtTime(0, ctx.currentTime + delay);
+            gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + delay + 0.05); // Attack
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 2.5); // Long decay
+
+            osc.start(ctx.currentTime + delay);
+            osc.stop(ctx.currentTime + delay + 2.5);
+          });
+        } catch (e) {
+          console.error("Audio error", e);
+          // Fallback
           const audio = new Audio('https://cdn.freesound.org/previews/352/352097_6403606-lq.mp3');
           audio.volume = 0.5;
           audio.play().catch(e => console.error("Audio play failed", e));
-        } catch (e) { console.error(e); }
+        }
       };
 
       useEffect(() => {
-        if (isRunning && timeLeft > 0) {
-          intervalRef.current = window.setInterval(() => {
-            updateData(widget.id, { timeLeft: Math.max(0, timeLeft - 1) });
-          }, 1000);
-        } else if (timeLeft === 0 && isRunning) {
-          updateData(widget.id, { isRunning: false });
-          playAlarm();
+        if (isRunning) {
+          if (mode === 'stopwatch') {
+            const start = performance.now() - (widget.data.elapsed || 0);
+            intervalRef.current = requestAnimationFrame(() => {
+              const now = performance.now();
+              updateData(widget.id, { elapsed: now - start });
+            });
+            // Loop logic handled by React state updates being async/batched is tricky with RAF. 
+            // Better to use setInterval for updates or just RAF loop.
+            // Using logic similar to existing timer but cleaner for high freq:
+            const loop = () => {
+              const now = performance.now();
+              updateData(widget.id, { elapsed: now - start });
+              intervalRef.current = requestAnimationFrame(loop);
+            };
+            intervalRef.current = requestAnimationFrame(loop);
+          } else {
+            // Standard Countdown
+            if (timeLeft > 0) {
+              intervalRef.current = window.setInterval(() => {
+                updateData(widget.id, { timeLeft: Math.max(0, timeLeft - 1) });
+              }, 1000);
+            } else if (timeLeft === 0) {
+              updateData(widget.id, { isRunning: false });
+              playAlarm();
+            }
+          }
         }
-        return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-      }, [isRunning, timeLeft, widget.id, updateData]);
+        return () => {
+          if (intervalRef.current) {
+            if (mode === 'stopwatch') cancelAnimationFrame(intervalRef.current);
+            else clearInterval(intervalRef.current);
+          }
+        };
+      }, [isRunning, timeLeft, widget.id, updateData, mode]); // Added mode dependency
 
       const calculateTimeFromMouseEvent = (e) => {
         if (!timerRef.current) return;
@@ -1474,16 +1571,27 @@
       };
 
       const toggleTimer = () => updateData(widget.id, { isRunning: !isRunning });
-      const resetTimer = () => updateData(widget.id, { isRunning: false, timeLeft: 120 });
+      const resetTimer = () => {
+        if (mode === 'stopwatch') updateData(widget.id, { isRunning: false, elapsed: 0 });
+        else updateData(widget.id, { isRunning: false, timeLeft: 120 });
+      };
       const adjustTime = (delta) => updateData(widget.id, { timeLeft: Math.max(0, timeLeft + delta) });
       const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+
+      const formatStopwatch = (ms) => {
+        if (!ms) return "00:00.00";
+        const totalSec = Math.floor(ms / 1000);
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        const centi = Math.floor((ms % 1000) / 10); // 2 digits
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${centi.toString().padStart(2, '0')}`;
+      };
 
       const progress = timeLeft / 3600;
       const circum = 2 * Math.PI * 45; // Based on r=45?
       // Wait, we want the handle to be in the MIDDLE of the stroke.
       // Stroke width = 45.
       // Stroke is centered at r=22.5?
-      // Circle r="22.5" stroke-width="45".
       // Inner radius = 0. Outer radius = 45.
       // So visual timer fills the whole circle.
       // The handle should be at r=22.5 to be in the middle of the "pie slice"?
@@ -1504,24 +1612,33 @@
       return (
         <div className="flex flex-col items-center justify-between h-full p-2 relative bg-white select-none group">
           <div className="absolute top-2 left-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={() => setShowColorMenu(!showColorMenu)}
-              className={`w-6 h-6 rounded-full ${COLORS[color].bg} ring-2 ring-white shadow-sm hover:scale-110 transition-transform`}
-              title="Change Color"
-            />
-            {showColorMenu && (
-              <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 p-2 flex flex-col gap-2 z-50 animate-in fade-in slide-in-from-top-2">
-                {Object.keys(COLORS).map(c => (
-                  <button
-                    key={c}
-                    onClick={() => { updateData(widget.id, { color: c }); setShowColorMenu(false); }}
-                    className={`w-5 h-5 rounded-full ${COLORS[c].bg} ${color === c ? 'ring-2 ring-slate-400' : ''} hover:scale-110 transition-transform`}
-                  />
-                ))}
-              </div>
+            {mode === 'visual' && (
+              <>
+                <button
+                  onClick={() => setShowColorMenu(!showColorMenu)}
+                  className={`w-6 h-6 rounded-full ${COLORS[color].bg} ring-2 ring-white shadow-sm hover:scale-110 transition-transform`}
+                  title="Change Color"
+                />
+                {showColorMenu && (
+                  <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 p-2 flex flex-col gap-2 z-50 animate-in fade-in slide-in-from-top-2">
+                    {Object.keys(COLORS).map(c => (
+                      <button
+                        key={c}
+                        onClick={() => { updateData(widget.id, { color: c }); setShowColorMenu(false); }}
+                        className={`w-5 h-5 rounded-full ${COLORS[c].bg} ${color === c ? 'ring-2 ring-slate-400' : ''} hover:scale-110 transition-transform`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
-          <button onClick={() => updateData(widget.id, { mode: mode === 'digital' ? 'visual' : 'digital' })} className="absolute top-2 right-2 p-1.5 text-gray-300 hover:text-blue-600 rounded-full hover:bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity z-20" title="Switch Mode"><Clock size={16} /></button>
+          {/* Mode Switcher - New 3 Buttons Design */}
+          <div className="absolute top-2 right-2 flex bg-gray-100 rounded-lg p-0.5 gap-0.5 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onClick={() => updateData(widget.id, { mode: 'visual' })} className={`p-1 rounded-md transition-all ${mode === 'visual' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Visual Timer"><PieChart size={12} /></button>
+            <button onClick={() => updateData(widget.id, { mode: 'digital' })} className={`p-1 rounded-md transition-all ${mode === 'digital' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Digital Timer"><Hash size={12} /></button>
+            <button onClick={() => updateData(widget.id, { mode: 'stopwatch', isRunning: false })} className={`p-1 rounded-md transition-all ${mode === 'stopwatch' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Stopwatch"><TimerIcon size={12} /></button>
+          </div>
 
           <div className="flex-1 w-full flex items-center justify-center p-2 min-h-0">
             {mode === 'visual' ? (
@@ -1575,14 +1692,11 @@
                   <span className="font-bold text-slate-700 bg-white/80 px-2 rounded-lg backdrop-blur-sm shadow-sm" style={{ fontSize: (fontSize * 1.5) + 'px' }}>{formatTime(timeLeft)}</span>
                 </div>
               </div>
-            ) : (
+            ) : mode === 'digital' ? (
               <div className="flex flex-col items-center">
                 <div className={`font-black text-slate-800 tracking-widest mb-4 font-sans`} style={{ fontSize: (fontSize * 4) + 'px' }}>{formatTime(timeLeft)}</div>
                 {!isRunning && (
                   <div className="flex flex-col items-center gap-2">
-                    <div className="flex gap-4">
-                      {/* Removed -30/+30 buttons */}
-                    </div>
                     <div className="flex gap-2 items-center mt-2">
                       <input
                         type="text"
@@ -1594,10 +1708,9 @@
                           if (e.key === 'Enter') {
                             const parts = customTime.split(':').map(Number);
                             let seconds = 0;
-                            if (parts.length === 2) seconds = parts[0] * 60 + parts[1];
-                            else if (parts.length === 1) seconds = parts[0] * 60; // Assume minutes if just one number? Or seconds? User said "amount of time". Assume minutes for single number is standard teacher timer behavior, or seconds? Let's assume minutes if < 100, else seconds? Let's check logic. Actually, standard is usually minutes. Let's do M:S support.
                             // Improved parsing
-                            if (parts.length === 1 && !isNaN(parts[0])) seconds = parts[0] * 60;
+                            if (parts.length === 2) seconds = parts[0] * 60 + parts[1];
+                            else if (parts.length === 1 && !isNaN(parts[0])) seconds = parts[0] * 60;
 
                             if (seconds > 0) {
                               updateData(widget.id, { timeLeft: seconds });
@@ -1620,6 +1733,14 @@
                   </div>
                 )}
               </div>
+            ) : (
+              /* Stopwatch Mode */
+              <div className="flex flex-col items-center">
+                <div className="font-black text-slate-800 tracking-widest font-mono" style={{ fontSize: (fontSize * 3) + 'px' }}>
+                  {formatStopwatch(widget.data.elapsed || 0)}
+                </div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Stopwatch</div>
+              </div>
             )}
           </div>
 
@@ -1632,7 +1753,7 @@
             </button>
             <button onClick={resetTimer} className="p-3 hover:bg-slate-100 rounded-full text-slate-500 transition-colors" title="Reset"><RotateCcw size={20} /></button>
           </div>
-        </div>
+        </div >
       );
     };
 
@@ -2663,8 +2784,12 @@
             </div>
             <div className="p-6">
               <label className="block text-sm font-bold text-gray-700 mb-2">Student Names (one per line)</label>
-
-              className="w-full h-32 border-2 border-gray-200 rounded-xl p-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all custom-scrollbar resize-none font-sans"
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                className="w-full h-32 border-2 border-gray-200 rounded-xl p-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all custom-scrollbar resize-none font-sans"
+                placeholder="Paste names here..."
+              />
             </div>
             <div className="p-4 border-t bg-gray-50 flex justify-end">
               <button
@@ -3056,9 +3181,10 @@
         setScheduleTemplate(prev => ({ ...prev, [day]: prev[day].filter((_, i) => i !== index) }));
       };
 
-      const saveSchedule = () => {
+      // Auto-save Schedule Template
+      useEffect(() => {
         saveScheduleTemplate(scheduleTemplate);
-      };
+      }, [scheduleTemplate]);
 
       const tabs = [
         { id: 'appearance', label: 'Appearance', icon: <ImageIcon size={16} /> },
@@ -3204,14 +3330,14 @@
                     ) : (
                       <div className="p-4 flex flex-col" style={{ minHeight: '300px' }}>
                         <label className="text-xs font-bold text-gray-500 uppercase mb-2">Edit Names (One per line)</label>
+                        <label className="text-xs font-bold text-gray-500 uppercase mb-2">Edit Names (One per line)</label>
                         <textarea
                           className="flex-1 border-2 border-gray-200 rounded-xl p-4 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all custom-scrollbar resize-none font-medium text-slate-700 h-24"
                           autoFocus
                           value={bulkText}
                           onChange={e => setBulkText(e.target.value)}
-                          style={{ minHeight: '200px' }}
                         />
-                        <button onClick={handleBulkSave} className="mt-2 bg-blue-100 text-blue-700 font-bold py-2 rounded-lg hover:bg-blue-200">Update List</button>
+                        {/* Update button removed per user request - handled by Save All */}
                       </div>
                     )}
                   </>
@@ -3366,9 +3492,7 @@
                     </button>
                   </div>
 
-                  <button onClick={saveSchedule} className="w-full mt-4 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl flex items-center justify-center gap-2">
-                    <Save size={18} /> Save Schedule Template
-                  </button>
+
                 </div>
               )}
 
@@ -3620,7 +3744,28 @@
         // Migration of single roster
         const defaultRoster = getRoster();
         const defaultSlides = (() => {
-          try { return JSON.parse(localStorage.getItem(WIDGETS_STORAGE_KEY)) || [[]]; } catch (e) { return [[]]; }
+          try {
+            let s = JSON.parse(localStorage.getItem(WIDGETS_STORAGE_KEY)) || [[]];
+            // Ensure Clock is present in the first slide if not anywhere
+            // Check first slide
+            if (!s[0].some(w => w.type === 'CLOCK')) {
+              const clockWidget = {
+                id: 'default-clock-' + Date.now(),
+                type: 'CLOCK',
+                position: { x: 50, y: 40 }, // Top Left 
+                id: 'default-clock-' + Date.now(),
+                type: 'CLOCK',
+                position: { x: 50, y: 40 }, // Top Left 
+                size: { width: 340, height: 260 },
+                zIndex: 100,
+                zIndex: 100,
+                data: { fontSize: 16 },
+                isMinimized: false
+              };
+              s[0].push(clockWidget);
+            }
+            return s;
+          } catch (e) { return [[]]; }
         })();
         return [{ id: 'default', name: 'My Class', roster: defaultRoster, slides: defaultSlides }];
       });
@@ -3690,6 +3835,7 @@
       const [maxZIndex, setMaxZIndex] = useState(10);
       const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }));
       const [isDockMinimized, setIsDockMinimized] = useState(false);
+      const [editingWidgetId, setEditingWidgetId] = useState(null);
       const [clockStyle, setClockStyle] = useState(() => {
         return localStorage.getItem('homeroom_clock_style') || 'standard';
       });
@@ -3700,7 +3846,7 @@
 
       const [dockOrder, setDockOrder] = useState(() => {
         const stored = getDockOrder();
-        const mainDefaults = ['SEAT_PICKER', 'GROUP_MAKER', 'SCHEDULE', 'CALENDAR', 'TEXT', 'OVERLAY_TEXT', 'TIMER', 'RANDOMIZER'];
+        const mainDefaults = ['SEAT_PICKER', 'GROUP_MAKER', 'SCHEDULE', 'CALENDAR', 'TEXT', 'OVERLAY_TEXT', 'TIMER', 'RANDOMIZER', 'CLOCK'];
         const drawerDefaults = ['TRAFFIC', 'QR', 'WEBCAM', 'DICE', 'VOTE', 'WHITEBOARD', 'YOUTUBE'];
         const allDefaults = [...mainDefaults, ...drawerDefaults];
 
@@ -3959,7 +4105,7 @@
       };
 
       // --- WIDGET MANAGEMENT ---
-      const addWidget = (type, extraData = {}) => { addToHistory(); const id = Date.now().toString(); const size = WIDGET_SIZES[type]; let startY = (window.innerHeight / 2) - (size.height / 2) + (Math.random() * 40 - 20); if (type === 'GROUP_MAKER') startY -= 100; const position = { x: (window.innerWidth / 2) - (size.width / 2) + (Math.random() * 40 - 20), y: startY }; let data = { fontSize: 16 }; if (type === 'TIMER') data = { ...data, timeLeft: 120, isRunning: false, mode: 'visual' }; if (type === 'RANDOMIZER') data = { ...data, students: getInitialStudents(), currentName: null, isAnimating: false, pickedStudents: [] }; if (type === 'GROUP_MAKER') data = { ...data, students: getInitialStudents(), groupCount: 4, groups: [] }; if (type === 'SEAT_PICKER') { const savedDesks = getSeatLayout(); if (savedDesks && savedDesks.length > 0) { data = { ...data, desks: savedDesks, isEditing: false }; } else { const initialStudents = getInitialStudents(); const initialDesks = initialStudents.slice(0, 8).map((s, i) => ({ id: `desk-${i}`, x: 50 + (i % 4) * 120, y: 50 + Math.floor(i / 4) * 100, student: s.name, color: 'blue', type: 'student', rotation: 0 })); data = { ...data, desks: initialDesks, isEditing: false }; } } if (type === 'TEXT') data = { ...data, mode: 'text', content: '', items: [] }; if (type === 'OVERLAY_TEXT') data = { ...data, content: '' }; if (type === 'WEBCAM') data = { ...data, isMirrored: true, isActive: true }; if (type === 'DICE') data = { ...data, sides: 6, diceCount: 1, results: [1], isRolling: false }; if (type === 'TRAFFIC') data = { ...data, activeLight: null }; if (type === 'QR') data = { ...data, url: '' }; if (type === 'VOTE') data = { ...data, question: 'Class Poll', options: [{ id: 1, text: 'Yes', count: 0 }, { id: 2, text: 'No', count: 0 }] }; if (type === 'WHITEBOARD') data = { ...data, lines: [], color: '#000000', size: 5, tool: 'pen' }; if (type === 'SCHEDULE') { const template = getScheduleTemplate(); const today = DAYS_OF_WEEK[new Date().getDay()]; data = { ...data, items: template[today] || [] }; } if (type === 'YOUTUBE') { data = { ...data, youtubeUrl: '' }; } data = { ...data, ...extraData }; const newWidget = { id, type, position, size, zIndex: maxZIndex + 1, data, isMinimized: false }; setWidgets(prev => [...prev, newWidget]); setMaxZIndex(prev => prev + 1); setSelectedId(id); };
+      const addWidget = (type, extraData = {}) => { addToHistory(); const id = Date.now().toString(); const size = WIDGET_SIZES[type]; let startY = (window.innerHeight / 2) - (size.height / 2) + (Math.random() * 40 - 20); if (type === 'GROUP_MAKER') startY -= 100; if (type === 'SCHEDULE') startY -= 60; if (type === 'SEAT_PICKER') startY = 30; let startX = (window.innerWidth / 2) - (size.width / 2) + (Math.random() * 40 - 20); if (type === 'SEAT_PICKER') startX += 60; const position = { x: startX, y: startY }; let data = { fontSize: 16 }; if (type === 'TIMER') data = { ...data, timeLeft: 120, isRunning: false, mode: 'visual' }; if (type === 'RANDOMIZER') data = { ...data, students: getInitialStudents(), currentName: null, isAnimating: false, pickedStudents: [] }; if (type === 'GROUP_MAKER') data = { ...data, students: getInitialStudents(), groupCount: 4, groups: [] }; if (type === 'SEAT_PICKER') { const savedDesks = getSeatLayout(); if (savedDesks && savedDesks.length > 0) { data = { ...data, desks: savedDesks, isEditing: false }; } else { const initialStudents = getInitialStudents(); const initialDesks = initialStudents.slice(0, 8).map((s, i) => ({ id: `desk-${i}`, x: 50 + (i % 4) * 120, y: 50 + Math.floor(i / 4) * 100, student: s.name, color: 'blue', type: 'student', rotation: 0 })); data = { ...data, desks: initialDesks, isEditing: false }; } } if (type === 'TEXT') data = { ...data, mode: 'text', content: '', items: [] }; if (type === 'OVERLAY_TEXT') data = { ...data, content: '' }; if (type === 'WEBCAM') data = { ...data, isMirrored: true, isActive: true }; if (type === 'DICE') data = { ...data, sides: 6, diceCount: 1, results: [1], isRolling: false }; if (type === 'TRAFFIC') data = { ...data, activeLight: null }; if (type === 'QR') data = { ...data, url: '' }; if (type === 'VOTE') data = { ...data, question: 'Class Poll', options: [{ id: 1, text: 'Yes', count: 0 }, { id: 2, text: 'No', count: 0 }] }; if (type === 'WHITEBOARD') data = { ...data, lines: [], color: '#000000', size: 5, tool: 'pen' }; if (type === 'SCHEDULE') { const template = getScheduleTemplate(); const today = DAYS_OF_WEEK[new Date().getDay()]; data = { ...data, items: template[today] || [] }; } if (type === 'YOUTUBE') { data = { ...data, youtubeUrl: '' }; } if (type === 'CLOCK') { data = { ...data, style: 'standard' }; } data = { ...data, ...extraData }; const newWidget = { id, type, position, size, zIndex: maxZIndex + 1, data, isMinimized: false }; setWidgets(prev => [...prev, newWidget]); setMaxZIndex(prev => prev + 1); setSelectedId(id); };
 
       useEffect(() => {
         const handlePaste = (e) => {
@@ -4114,14 +4260,19 @@
           updateData: updateWidgetData,
           updateLayout: updateWidgetLayout, // NEW PROP
           roster,
-          onUpdateRoster: setRoster
+          onUpdateRoster: setRoster,
+          extraProps: { // Pass globals needed by specific widgets
+            clockStyle: widget.data?.style || clockStyle,
+            setClockStyle: setClockStyle,
+            onOpenSettings: () => { setSettingsInitialTab('appearance'); setShowSettingsModal(true); }
+          }
         };
         // Inject updateLayout into the widget object too for backward compat if I used it that way above? 
         // In CreateGroups above I used `widget.updateLayout`. So I should modify `widget` prop.
         const widgetWithLayout = { ...widget, updateLayout: updateWidgetLayout };
         const enhancedProps = { ...props, widget: widgetWithLayout };
 
-        switch (widget.type) { case 'TIMER': return <TimerWidget {...enhancedProps} />; case 'RANDOMIZER': return <RandomizerWidget {...enhancedProps} />; case 'GROUP_MAKER': return <GroupMakerWidget {...enhancedProps} />; case 'SEAT_PICKER': return <SeatPickerWidget {...enhancedProps} />; case 'TEXT': return <TextWidget {...enhancedProps} />; case 'OVERLAY_TEXT': return <SimpleTextWidget {...enhancedProps} />; case 'WEBCAM': return <WebcamWidget {...enhancedProps} />; case 'DICE': return <DiceWidget {...enhancedProps} />; case 'TRAFFIC': return <TrafficLightWidget {...enhancedProps} />; case 'QR': return <QRCodeWidget {...enhancedProps} />; case 'VOTE': return <VoteWidget {...enhancedProps} />; case 'WHITEBOARD': return <WhiteboardWidget {...enhancedProps} />; case 'SCHEDULE': return <ScheduleWidget {...enhancedProps} selectedDate={selectedDate} scheduleTemplate={scheduleTemplate} setScheduleTemplate={setScheduleTemplate} onOpenSettings={() => { setSettingsInitialTab('schedule'); setShowSettingsModal(true); }} />; case 'YOUTUBE': return <YouTubeWidget {...enhancedProps} />; case 'CALENDAR': return <CalendarWidget {...enhancedProps} selectedDate={selectedDate} onSelectDate={setSelectedDate} />; default: return null; }
+        switch (widget.type) { case 'TIMER': return <TimerWidget {...enhancedProps} />; case 'RANDOMIZER': return <RandomizerWidget {...enhancedProps} />; case 'GROUP_MAKER': return <GroupMakerWidget {...enhancedProps} />; case 'SEAT_PICKER': return <SeatPickerWidget {...enhancedProps} />; case 'TEXT': return <TextWidget {...enhancedProps} />; case 'OVERLAY_TEXT': return <SimpleTextWidget {...enhancedProps} />; case 'WEBCAM': return <WebcamWidget {...enhancedProps} />; case 'DICE': return <DiceWidget {...enhancedProps} />; case 'TRAFFIC': return <TrafficLightWidget {...enhancedProps} />; case 'QR': return <QRCodeWidget {...enhancedProps} />; case 'VOTE': return <VoteWidget {...enhancedProps} />; case 'WHITEBOARD': return <WhiteboardWidget {...enhancedProps} />; case 'SCHEDULE': return <ScheduleWidget {...enhancedProps} selectedDate={selectedDate} scheduleTemplate={scheduleTemplate} setScheduleTemplate={setScheduleTemplate} onOpenSettings={() => { setSettingsInitialTab('schedule'); setShowSettingsModal(true); }} />; case 'YOUTUBE': return <YouTubeWidget {...enhancedProps} />; case 'CALENDAR': return <CalendarWidget {...enhancedProps} selectedDate={selectedDate} onSelectDate={setSelectedDate} />; case 'CLOCK': return <ClockWidget {...enhancedProps} />; default: return null; }
       };
 
       return (
@@ -4130,7 +4281,7 @@
           backgroundImage: currentBg && currentBg.id !== 'default' ? `url(${currentBg.src})` : 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center'
-        }}>
+        }} onMouseDown={() => setSelectedId(null)}>
           {/* Modals */}
           {showOnboarding && <OnboardingModal onComplete={() => setShowOnboarding(false)} onSaveRoster={(newRoster) => setRoster(newRoster)} />}
           {showSettingsModal && <SettingsModal
@@ -4141,7 +4292,7 @@
             onAddRoster={handleAddRoster}
             onDeleteRoster={handleDeleteRoster}
             onRenameRoster={handleRenameRoster}
-            onClose={() => { setShowSettingsModal(false); }}
+            onClose={() => { setShowSettingsModal(false); setEditingWidgetId(null); }}
             onSave={(newRoster) => { setRoster(newRoster); }}
             downloadData={downloadData}
             fileInputRef={fileInputRef}
@@ -4157,8 +4308,14 @@
             setBackupEnabled={setBackupEnabled}
             backupInterval={backupInterval}
             setBackupInterval={setBackupInterval}
-            clockStyle={clockStyle}
-            setClockStyle={setClockStyle}
+            clockStyle={editingWidgetId ? (widgets.find(w => w.id === editingWidgetId)?.data?.style || 'standard') : clockStyle}
+            setClockStyle={(newStyle) => {
+              if (editingWidgetId) {
+                updateWidgetData(editingWidgetId, { style: newStyle });
+              } else {
+                setClockStyle(newStyle);
+              }
+            }}
           />}
           <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={uploadData} />
 
@@ -4172,13 +4329,8 @@
           {/* Dark Overlay for better contrast on images */}
           {currentBg && currentBg.id !== 'default' && <div className="absolute inset-0 bg-black/20 z-0 pointer-events-none" />}
 
-          {/* Top Info Bar - Clock */}
+          {/* Top Info Bar - Clock (REMOVED - now a widget) */}
           <div className={`absolute top-10 left-12 z-1 select-none transition-colors duration-300 ${currentBg.textColor || 'text-slate-800'}`}>
-            <ClockDisplay
-              style={clockStyle}
-              textColor={currentBg.textColor || 'text-slate-800'}
-              onSettingsClick={() => { setSettingsInitialTab('appearance'); setShowSettingsModal(true); }}
-            />
             {(() => {
               // Don't show if disabled
               if (!backupEnabled) return null;
@@ -4210,7 +4362,7 @@
           <div className="absolute inset-0 z-30 pointer-events-none">
             {/* Spotlight Overlay - inside widget container so only spotlighted widget appears above it */}
             {spotlightId && <div className="fixed inset-0 bg-black/80 cursor-pointer pointer-events-auto animate-in fade-in duration-300" style={{ zIndex: 9999, boxShadow: 'inset 0 0 200px 100px rgba(0,0,0,0.5)' }} onClick={() => setSpotlightId(null)}><div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/40" /></div>}
-            {widgets.map(w => (<DraggableResizable key={w.id} id={w.id} position={w.position} size={w.size} zIndex={w.zIndex} isSelected={selectedId === w.id} isMinimized={w.isMinimized} isSpotlighted={spotlightId === w.id} isGridEnabled={isGridEnabled} widgetType={w.type} onSelect={bringToFront} onUpdate={updateWidgetLayout} onRemove={removeWidget} onMinimizeToggle={toggleMinimize} onSpotlight={toggleSpotlight} chromeless={w.type === 'OVERLAY_TEXT'} onFontSizeChange={['OVERLAY_TEXT', 'WHITEBOARD', 'QR', 'WEBCAM', 'YOUTUBE', 'CALENDAR'].includes(w.type) ? undefined : (d) => updateWidgetData(w.id, { fontSize: Math.max(8, (w.data.fontSize || 16) + d) })}>{renderWidgetContent(w)}</DraggableResizable>))}
+            {widgets.map(w => (<DraggableResizable key={w.id} id={w.id} position={w.position} size={w.size} zIndex={w.zIndex} isSelected={selectedId === w.id} isMinimized={w.isMinimized} isSpotlighted={spotlightId === w.id} isGridEnabled={isGridEnabled} widgetType={w.type} onSelect={bringToFront} onUpdate={updateWidgetLayout} onRemove={removeWidget} onMinimizeToggle={toggleMinimize} onSpotlight={toggleSpotlight} onSettings={(id) => { setEditingWidgetId(id); setSettingsInitialTab('appearance'); setShowSettingsModal(true); }} chromeless={['OVERLAY_TEXT', 'CLOCK'].includes(w.type)} onFontSizeChange={['OVERLAY_TEXT', 'WHITEBOARD', 'QR', 'WEBCAM', 'YOUTUBE', 'CALENDAR', 'CLOCK'].includes(w.type) ? undefined : (d) => updateWidgetData(w.id, { fontSize: Math.max(8, (w.data.fontSize || 16) + d) })}>{renderWidgetContent(w)}</DraggableResizable>))}
           </div>
 
           {/* Slide Controls - Refined Styles */}
@@ -4239,7 +4391,7 @@
           </div>
 
           {/* Dock */}
-          <div className="absolute bottom-2 left-0 right-0 z-50 flex flex-col items-center justify-end pointer-events-none">
+          <div className="absolute bottom-1 left-0 right-0 z-50 flex flex-col items-center justify-end pointer-events-none">
             <div className={`max-w-6xl mx-4 mb-4 transition-all duration-300 ease-in-out origin-bottom pointer-events-auto ${isDockMinimized ? 'translate-y-20 opacity-0 scale-95 pointer-events-none invisible' : 'translate-y-0 opacity-100 scale-100 visible'}`}>
               <div className={`flex items-center backdrop-blur-2xl rounded-3xl shadow-2xl p-0.5 ring-1 ring-white/50 relative`}>
                 <div className="absolute inset-0 bg-white/20 rounded-3xl overflow-hidden -z-10 border border-white/40">
@@ -4317,14 +4469,14 @@
 
                 <button
                   onClick={() => setIsDockLocked(!isDockLocked)}
-                  className={`p-3 rounded-full transition-all ${!isDockLocked ? 'bg-blue-100 text-blue-600 shadow-inner' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'}`}
+                  className={`p-3 rounded-full transition-all ${!isDockLocked ? 'bg-blue-100 text-blue-600 shadow-inner' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-700'}`}
                   title={isDockLocked ? "Unlock Dock to Rearrange" : "Lock Dock"}
                 >
                   {isDockLocked ? <Lock size={16} /> : <Unlock size={16} />}
                 </button>
                 <button
                   onClick={() => { setSettingsInitialTab('appearance'); setShowSettingsModal(true); }}
-                  className="p-3 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="p-3 rounded-full hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors"
                   title="Settings"
                 >
                   <Settings size={20} />
