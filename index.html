@@ -91,7 +91,7 @@
       Save, AlertCircle, AlertTriangle, Share2, Edit3, Layout, User, MoreVertical, MoreHorizontal, Briefcase,
       RotateCw, Lock, Unlock, Grip, Palette, Image as ImageIcon, UploadCloud, Grid,
       Sun, Moon, BarChart2, Italic, Underline, AlignLeft, Clock, Smile,
-      Volume2, VolumeX, Download, Upload, Check, Info, ExternalLink, Mail, Calendar, Youtube, Lightbulb, MousePointer2, Undo2, Redo2, ArrowRightSquare, QrCode, Bell
+      Volume2, VolumeX, Download, Upload, Check, Info, ExternalLink, Mail, Calendar, Youtube, Lightbulb, MousePointer2, Undo2, Redo2, ArrowRightSquare, QrCode, Bell, StickyNote
     } from 'lucide-react';
 
     // --- CONSTANTS ---
@@ -105,7 +105,7 @@
       yellow: 'bg-yellow-50 border-yellow-400'
     };
 
-    const INIT_DOCK_ORDER = ['TIMER', 'RANDOMIZER', 'GROUP_MAKER', 'SEAT_PICKER', 'SCHEDULE', 'TEXT', 'TRAFFIC', 'QR', 'WEBCAM', 'DICE', 'VOTE', 'WHITEBOARD', 'YOUTUBE', 'CALENDAR'];
+    const INIT_DOCK_ORDER = ['TIMER', 'RANDOMIZER', 'GROUP_MAKER', 'SEAT_PICKER', 'SCHEDULE', 'TEXT', 'OVERLAY_TEXT', 'TRAFFIC', 'QR', 'WEBCAM', 'DICE', 'VOTE', 'WHITEBOARD', 'YOUTUBE', 'CALENDAR'];
     const TrafficLightIcon = () => (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="7" y="2" width="10" height="20" rx="4" />
@@ -120,7 +120,8 @@
       RANDOMIZER: { label: 'Random', icon: <Shuffle /> },
       GROUP_MAKER: { label: 'Groups', icon: <Users /> },
       SEAT_PICKER: { label: 'Seats', icon: <Armchair /> },
-      TEXT: { label: 'Notes', icon: <Type /> },
+      TEXT: { label: 'Notes', icon: <StickyNote /> },
+      OVERLAY_TEXT: { label: 'Text', icon: <Type /> },
       TRAFFIC: { label: 'Noise', icon: <TrafficLightIcon /> },
       QR: { label: 'QR Code', icon: <Share2 /> },
       WEBCAM: { label: 'Cam', icon: <Camera /> },
@@ -213,7 +214,8 @@
 
       SCHEDULE: { width: 380, height: 500 },
       YOUTUBE: { width: 480, height: 360 },
-      CALENDAR: { width: 300, height: 320 }
+      CALENDAR: { width: 300, height: 320 },
+      OVERLAY_TEXT: { width: 300, height: 80 }
     };
 
     // --- COMPONENTS ---
@@ -246,33 +248,31 @@
       );
 
       if (style === 'bighour') return (
-        <div className="flex items-center justify-center gap-0.5 scale-75">
-          <div className="text-xl font-black text-slate-800 leading-none">10</div>
-          <div className="flex flex-col leading-none">
-            <div className="text-[10px] font-bold text-slate-600">10</div>
-            <div className="text-[6px] font-medium text-slate-400">30</div>
+        <div className="flex items-center justify-center gap-0.5" style={{ transform: 'scale(0.8)' }}>
+          <div className="text-lg font-black text-slate-800 leading-none">10</div>
+          <div className="flex flex-col justify-start h-full pt-0.5">
+            <div className="text-[8px] font-bold text-slate-500 leading-none">10</div>
+            <div className="text-[6px] font-bold text-slate-300 leading-none">30</div>
           </div>
-        </div>
-      );
-
-      if (style === 'none') return (
-        <div className="flex flex-col items-center justify-center p-2 border-2 border-dashed border-gray-200 rounded-lg text-gray-300">
-          <span className="text-[10px] font-bold uppercase">HIDDEN</span>
         </div>
       );
 
       if (style === 'modern') return (
         <div className="flex flex-col items-center justify-center">
-          <div className="text-xl font-thin text-slate-700">10:10</div>
-          <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-1">OCT 23</div>
+          <div className="text-xl font-thin tracking-widest text-slate-800 leading-none tabular-nums">10:10</div>
+          <div className="text-[6px] font-medium tracking-wide uppercase text-slate-400 mt-0.5">OCT 23</div>
+        </div>
+      );
+
+      if (style === 'none') return (
+        <div className="flex items-center justify-center w-full h-full opacity-30">
+          <div className="border-2 border-dashed border-slate-400 rounded px-1 py-0.5 text-[8px] font-bold uppercase">Hidden</div>
         </div>
       );
 
       // Standard
       return (
-        <div className="flex flex-col items-center justify-center">
-          <div className="text-lg font-bold text-slate-800">10:10</div>
-        </div>
+        <div className="text-xl font-bold text-slate-800 tracking-tight">10:10</div>
       );
     };
 
@@ -709,6 +709,36 @@
         updateData(widget.id, { desks: newDesks });
       };
 
+      // Student Swap Logic (DnD)
+      const handleStudentDragStart = (e, sourceDeskId) => {
+        if (isEditing) return; // Use normal DnD for layout in edit mode
+        e.dataTransfer.setData('sourceDeskId', sourceDeskId);
+        e.dataTransfer.effectAllowed = 'move';
+      };
+
+      const handleStudentDrop = (e, targetDeskId) => {
+        if (isEditing) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const sourceDeskId = e.dataTransfer.getData('sourceDeskId');
+        if (!sourceDeskId || sourceDeskId === targetDeskId) return;
+
+        const newDesks = [...desks];
+        const sourceIndex = newDesks.findIndex(d => d.id === sourceDeskId);
+        const targetIndex = newDesks.findIndex(d => d.id === targetDeskId);
+
+        if (sourceIndex === -1 || targetIndex === -1) return;
+
+        // Swap students
+        const sourceStudent = newDesks[sourceIndex].student;
+        const targetStudent = newDesks[targetIndex].student;
+
+        newDesks[sourceIndex] = { ...newDesks[sourceIndex], student: targetStudent };
+        newDesks[targetIndex] = { ...newDesks[targetIndex], student: sourceStudent };
+
+        updateData(widget.id, { desks: newDesks });
+      };
+
       return (
         <div className="flex flex-col h-full bg-slate-50 relative overflow-hidden select-none">
           <div className="h-12 bg-white border-b flex items-center justify-between px-4 z-10 shrink-0 select-none">
@@ -738,8 +768,18 @@
               const isAbsent = desk.student && roster.find(s => s.name === desk.student && !s.active);
               const styleClass = desk.type === "teacher" ? "bg-slate-800 border-slate-600 text-white shadow-lg w-28 h-14 rounded-md" : `${DESK_COLORS[desk.color || "blue"]} w-20 h-11 rounded-lg`;
               const isSelected = selectedDeskIds.includes(desk.id);
-              return (<div key={desk.id} onContextMenu={(e) => toggleAbsence(desk.student, e)} className={`absolute shadow-sm border-2 flex items-center justify-center transition-shadow ${isEditing ? "cursor-move hover:shadow-md" : "cursor-pointer"} ${styleClass} ${isAbsent ? "opacity-60" : ""} ${isSelected ? "ring-2 ring-blue-500 ring-offset-2 z-10" : ""}`} style={{ left: desk.x, top: desk.y, transform: `rotate(${desk.rotation || 0}deg)`, fontSize: (desk.type === 'teacher' ? 14 : fontSize) + 'px' }} onMouseDown={(e) => handleMouseDown(e, desk.id)} >
-                {isAbsent && <div className="absolute -bottom-2 -left-2 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full z-30 shadow-sm pointer-events-none">OUT</div>}
+              return (<div
+                key={desk.id}
+                draggable={!isEditing && !!desk.student}
+                onDragStart={(e) => handleStudentDragStart(e, desk.id)}
+                onDragOver={(e) => { if (!isEditing) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } }}
+                onDrop={(e) => handleStudentDrop(e, desk.id)}
+                onContextMenu={(e) => toggleAbsence(desk.student, e)}
+                className={`absolute shadow-sm border-2 flex items-center justify-center transition-shadow ${isEditing ? "cursor-move hover:shadow-md" : "cursor-pointer"} ${styleClass} ${isAbsent ? "opacity-60" : ""} ${isSelected ? "ring-2 ring-blue-500 ring-offset-2 z-10" : ""}`}
+                style={{ left: desk.x, top: desk.y, transform: `rotate(${desk.rotation || 0}deg)`, fontSize: (desk.type === 'teacher' ? 14 : fontSize) + 'px' }}
+                onMouseDown={(e) => handleMouseDown(e, desk.id)}
+              >
+                {isAbsent && <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full z-30 shadow-sm pointer-events-none">OUT</div>}
                 {isEditing && (<>
                   <button onClick={(e) => { e.stopPropagation(); removeDesk(desk.id); }} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 shadow-sm hover:bg-red-600 w-5 h-5 flex items-center justify-center z-20"><X size={12} strokeWidth={3} /></button>
                   <div onMouseDown={(e) => handleRotateMouseDown(e, desk.id)} className="absolute -top-3 -left-3 bg-blue-500 text-white rounded-full p-1 shadow-sm hover:bg-blue-600 w-6 h-6 flex items-center justify-center z-20 cursor-grab active:cursor-grabbing"><RotateCw size={14} strokeWidth={2.5} /></div>
@@ -760,7 +800,7 @@
 
 
     const TextWidget = ({ widget, updateData }) => {
-      const { items = [], content = "", mode = 'text', fontSize = 16, color = 'yellow' } = widget.data;
+      const { items = [], content = "", mode = 'text', fontSize = 16, color = 'yellow', listTitle = "" } = widget.data;
       const [newItemText, setNewItemText] = useState("");
       const editorRef = useRef(null);
       const [formats, setFormats] = useState({ bold: false, italic: false, underline: false });
@@ -828,6 +868,8 @@
           const validLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
           // Create items
           const newItems = validLines.map((text, i) => ({ id: Date.now() + i + '', text, completed: false }));
+          // Ensure at least one item
+          if (newItems.length === 0) newItems.push({ id: Date.now().toString(), text: '', completed: false });
           // CRITICAL: Explicitly set content to empty string to prevent ghost rendering
           updateData(widget.id, { mode: 'list', items: newItems, content: "" });
         } else {
@@ -884,6 +926,12 @@
               <>
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-2 pl-4 z-10">
                   <div className="space-y-1">
+                    <input
+                      className="w-full bg-transparent border-none outline-none font-bold text-slate-700 mb-2 placeholder-slate-400/50"
+                      style={{ fontSize: (fontSize * 1.1) + 'px' }}
+                      value={listTitle}
+                      onChange={(e) => updateData(widget.id, { listTitle: e.target.value })}
+                    />
                     {items.map((item, idx) => (
                       <div key={item.id} draggable onDragStart={(e) => handleDragStart(e, idx)} onDragOver={(e) => handleDragOver(e, idx)} onDragEnd={handleDragEnd} className={`group/item flex items-start gap-2 p-1 rounded hover:bg-black/5 transition-colors ${item.completed ? 'opacity-50' : ''} ${draggedItemIndex === idx ? 'opacity-30' : ''}`}>
                         <div className="mt-1 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500"><GripVertical size={12} /></div>
@@ -910,10 +958,7 @@
                     ))}
                   </div>
                 </div>
-                <div className={`p-3 border-t ${theme.border} shrink-0 z-10 flex gap-2 bg-white/30`}>
-                  <input type="text" value={newItemText} onChange={(e) => setNewItemText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addItem()} placeholder="Add item..." className="flex-1 bg-white/80 border-none rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-black/10 placeholder-gray-400" />
-                  <button onClick={addItem} disabled={!newItemText.trim()} className="bg-white hover:bg-white text-green-600 p-1.5 rounded-lg shadow-sm transition-all"><Plus size={18} /></button>
-                </div>
+                {/* Footer removed - Enter key handles new items */}
               </>
             )}
           </div>
@@ -1238,16 +1283,112 @@
     const WIDGET_TYPE_LABELS = { TIMER: 'Timer', RANDOMIZER: 'Random', GROUP_MAKER: 'Groups', SEAT_PICKER: 'Seats', TEXT: 'Notes', WEBCAM: 'Cam', DICE: 'Dice', TRAFFIC: 'Noise', QR: 'QR Code', VOTE: 'Poll', WHITEBOARD: 'Draw', SCHEDULE: 'Schedule', YOUTUBE: 'Embed' };
 
     // --- UTILS ---
-    const DraggableResizable = ({ id, position, size, zIndex, isSelected, isMinimized = false, isSpotlighted = false, isGridEnabled = false, widgetType, onUpdate, onSelect, onRemove, onFontSizeChange, onMinimizeToggle, onSpotlight, children }) => {
+    const DraggableResizable = ({ id, position, size, zIndex, isSelected, isMinimized = false, isSpotlighted = false, isGridEnabled = false, widgetType, onUpdate, onSelect, onRemove, onFontSizeChange, onMinimizeToggle, onSpotlight, children, chromeless = false }) => {
       const [isDragging, setIsDragging] = useState(false); const [isResizing, setIsResizing] = useState(false); const startMousePos = useRef({ x: 0, y: 0 }); const startWidgetPos = useRef({ x: 0, y: 0 }); const startWidgetSize = useRef({ width: 0, height: 0 }); const onUpdateRef = useRef(onUpdate); const positionRef = useRef(position); const sizeRef = useRef(size); useEffect(() => { onUpdateRef.current = onUpdate; positionRef.current = position; sizeRef.current = size; }, [onUpdate, position, size]);
       const handleMouseDown = (e) => { e.stopPropagation(); onSelect(id); setIsDragging(true); startMousePos.current = { x: e.clientX, y: e.clientY }; startWidgetPos.current = { ...position }; };
       const handleResizeStart = (e) => { if (isMinimized) return; e.stopPropagation(); e.preventDefault(); onSelect(id); setIsResizing(true); startMousePos.current = { x: e.clientX, y: e.clientY }; startWidgetPos.current = { ...position }; startWidgetSize.current = { ...size }; };
-      useEffect(() => { if (!isDragging && !isResizing) return; const handleMouseMove = (e) => { e.preventDefault(); const dx = e.clientX - startMousePos.current.x; const dy = e.clientY - startMousePos.current.y; if (isDragging) { let newX = startWidgetPos.current.x + dx; let newY = startWidgetPos.current.y + dy; if (isGridEnabled) { newX = Math.round(newX / GRID_SIZE) * GRID_SIZE; newY = Math.round(newY / GRID_SIZE) * GRID_SIZE; } onUpdateRef.current(id, { x: newX, y: newY }, sizeRef.current); } else if (isResizing) { let newWidth = Math.max(200, startWidgetSize.current.width + dx); let newHeight = Math.max(150, startWidgetSize.current.height + dy); if (isGridEnabled) { newWidth = Math.round(newWidth / GRID_SIZE) * GRID_SIZE; newHeight = Math.round(newHeight / GRID_SIZE) * GRID_SIZE; } onUpdateRef.current(id, positionRef.current, { width: newWidth, height: newHeight }); } }; const handleMouseUp = () => { if (isDragging) { const snappedX = Math.round(positionRef.current.x / GRID_SIZE) * GRID_SIZE; const snappedY = Math.round(positionRef.current.y / GRID_SIZE) * GRID_SIZE; onUpdateRef.current(id, { x: snappedX, y: snappedY }, sizeRef.current); } if (isResizing && isGridEnabled) { const snappedW = Math.round(sizeRef.current.width / GRID_SIZE) * GRID_SIZE; const snappedH = Math.round(sizeRef.current.height / GRID_SIZE) * GRID_SIZE; onUpdateRef.current(id, positionRef.current, { width: Math.max(200, snappedW), height: Math.max(150, snappedH) }); } setIsDragging(false); setIsResizing(false); }; window.addEventListener('mousemove', handleMouseMove); window.addEventListener('mouseup', handleMouseUp); return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); }; }, [isDragging, isResizing, id, isGridEnabled]);
+
+      useEffect(() => { if (!isDragging && !isResizing) return; const handleMouseMove = (e) => { e.preventDefault(); const dx = e.clientX - startMousePos.current.x; const dy = e.clientY - startMousePos.current.y; if (isDragging) { let newX = startWidgetPos.current.x + dx; let newY = startWidgetPos.current.y + dy; if (isGridEnabled) { newX = Math.round(newX / GRID_SIZE) * GRID_SIZE; newY = Math.round(newY / GRID_SIZE) * GRID_SIZE; } onUpdateRef.current(id, { x: newX, y: newY }, sizeRef.current); } else if (isResizing) { let newWidth = Math.max(200, startWidgetSize.current.width + dx); let newHeight = Math.max(100, startWidgetSize.current.height + dy); if (isGridEnabled) { newWidth = Math.round(newWidth / GRID_SIZE) * GRID_SIZE; newHeight = Math.round(newHeight / GRID_SIZE) * GRID_SIZE; } onUpdateRef.current(id, positionRef.current, { width: newWidth, height: newHeight }); } }; const handleMouseUp = () => { if (isDragging) { const snappedX = Math.round(positionRef.current.x / GRID_SIZE) * GRID_SIZE; const snappedY = Math.round(positionRef.current.y / GRID_SIZE) * GRID_SIZE; onUpdateRef.current(id, { x: snappedX, y: snappedY }, sizeRef.current); } if (isResizing && isGridEnabled) { const snappedW = Math.round(sizeRef.current.width / GRID_SIZE) * GRID_SIZE; const snappedH = Math.round(sizeRef.current.height / GRID_SIZE) * GRID_SIZE; onUpdateRef.current(id, positionRef.current, { width: Math.max(200, snappedW), height: Math.max(100, snappedH) }); } setIsDragging(false); setIsResizing(false); }; window.addEventListener('mousemove', handleMouseMove); window.addEventListener('mouseup', handleMouseUp); return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); }; }, [isDragging, isResizing, id, isGridEnabled]);
       const displayHeight = isMinimized ? HEADER_HEIGHT : size.height;
       const widgetLabel = WIDGET_TYPE_LABELS[widgetType] || widgetType || '';
       const computedZIndex = isSpotlighted ? 10000 : (isSelected ? 9999 : (zIndex + 100));
-      return (<div className={`absolute flex flex-col bg-white rounded-xl shadow-xl overflow-hidden border-2 pointer-events-auto ${isDragging || isResizing ? '' : 'transition-all duration-200'} ${isSelected ? 'border-blue-500 shadow-2xl' : 'border-transparent border-gray-100'} ${isSpotlighted ? 'shadow-[0_0_80px_20px_rgba(255,255,255,0.3)]' : ''}`} style={{ left: position.x, top: position.y, width: size.width, height: displayHeight, zIndex: computedZIndex, touchAction: 'none' }} onMouseDown={() => { if (!isSelected) onSelect(id); }}> <div className="h-10 bg-gray-50 flex items-center justify-between px-2 cursor-move border-b border-gray-100 group select-none flex-shrink-0 relative" onMouseDown={handleMouseDown}> <div className="flex items-center gap-1 z-10"> {onFontSizeChange && (<><button onClick={(e) => { e.stopPropagation(); onFontSizeChange?.(-2); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"><Minus size={14} strokeWidth={3} /></button> <button onClick={(e) => { e.stopPropagation(); onFontSizeChange?.(2); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"><Plus size={14} strokeWidth={3} /></button></>)} </div> <div className="absolute inset-0 flex items-center justify-center pointer-events-none">{isMinimized ? <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{widgetLabel}</span> : <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-1.5 bg-gray-300 rounded-full group-hover:bg-blue-400 transition-colors pointer-events-auto" />}</div> <div className="flex items-center gap-1 z-10"> {onSpotlight && (<button onClick={(e) => { e.stopPropagation(); onSpotlight(id); }} className={`p-1 rounded transition-colors ${isSpotlighted ? 'text-yellow-500 bg-yellow-100' : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50'}`} title="Spotlight"> <Lightbulb size={14} /> </button>)} {onMinimizeToggle && (<button onClick={(e) => { e.stopPropagation(); onMinimizeToggle(id); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors" title={isMinimized ? "Restore" : "Minimize"}> <span className="font-bold text-sm leading-none">{isMinimized ? '+' : '−'}</span> </button>)} <button onClick={(e) => { e.stopPropagation(); onRemove(id); }} className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> </button> </div> </div> {!isMinimized && <div className="flex-1 relative overflow-hidden flex flex-col custom-scrollbar">{children}</div>} {!isMinimized && <div className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize flex items-end justify-end p-1 opacity-0 hover:opacity-100 transition-opacity bg-gradient-to-tl from-gray-100 to-transparent z-10" onMouseDown={handleResizeStart}> <Maximize2 size={16} className="text-gray-400 transform rotate-90" /> </div>} </div>);
+
+      const containerStyle = chromeless ? {
+        background: 'transparent',
+        boxShadow: isSelected ? '0 0 0 2px #3b82f6' : 'none',
+        border: 'none',
+      } : {};
+
+      const contentStyle = chromeless ? { overflow: 'visible' } : {};
+
+      const borderClass = chromeless
+        ? (isSelected ? 'border-2 border-blue-500 shadow-2xl' : 'border-0 border-transparent')
+        : (isSelected ? 'border-blue-500 shadow-2xl' : 'border-gray-100');
+
+      return (<div className={`absolute flex flex-col ${chromeless ? '' : 'bg-white rounded-xl shadow-xl border-2 overflow-hidden'} pointer-events-auto ${isDragging || isResizing ? '' : 'transition-all duration-200'} ${borderClass} ${isSpotlighted ? 'shadow-[0_0_80px_20px_rgba(255,255,255,0.3)]' : ''}`} style={{ left: position.x, top: position.y, width: size.width, height: displayHeight, zIndex: computedZIndex, touchAction: 'none', ...containerStyle }} onMouseDown={() => { if (!isSelected) onSelect(id); }}>
+        {!chromeless && <div className="h-10 bg-gray-50 flex items-center justify-between px-2 cursor-move border-b border-gray-100 group select-none flex-shrink-0 relative" onMouseDown={handleMouseDown}> <div className="flex items-center gap-1 z-10"> {onFontSizeChange && (<><button onClick={(e) => { e.stopPropagation(); onFontSizeChange?.(-2); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"><Minus size={14} strokeWidth={3} /></button> <button onClick={(e) => { e.stopPropagation(); onFontSizeChange?.(2); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"><Plus size={14} strokeWidth={3} /></button></>)} </div> <div className="absolute inset-0 flex items-center justify-center pointer-events-none">{isMinimized ? <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{widgetLabel}</span> : <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-1.5 bg-gray-300 rounded-full group-hover:bg-blue-400 transition-colors pointer-events-auto" />}</div> <div className="flex items-center gap-1 z-10"> {onSpotlight && (<button onClick={(e) => { e.stopPropagation(); onSpotlight(id); }} className={`p-1 rounded transition-colors ${isSpotlighted ? 'text-yellow-500 bg-yellow-100' : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50'}`} title="Spotlight"> <Lightbulb size={14} /> </button>)} {onMinimizeToggle && (<button onClick={(e) => { e.stopPropagation(); onMinimizeToggle(id); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors" title={isMinimized ? "Restore" : "Minimize"}> <span className="font-bold text-sm leading-none">{isMinimized ? '+' : '−'}</span> </button>)} <button onClick={(e) => { e.stopPropagation(); onRemove(id); }} className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> </button> </div> </div>}
+
+        {chromeless && isSelected && (
+          <div className="absolute -top-8 right-0 flex gap-1 animate-in fade-in slide-in-from-bottom-2 z-50">
+            <button onMouseDown={handleMouseDown} className="p-1.5 bg-white shadow-md rounded-lg text-slate-500 hover:text-blue-600 cursor-move" title="Drag"><GripHorizontal size={16} /></button>
+            <button onClick={(e) => { e.stopPropagation(); onRemove(id); }} className="p-1.5 bg-white shadow-md rounded-lg text-red-400 hover:text-red-600" title="Delete"><Trash2 size={16} /></button>
+          </div>
+        )}
+
+        <div className={`flex-1 relative flex flex-col custom-scrollbar ${chromeless ? '' : 'overflow-hidden'}`} style={contentStyle}>{children}</div>
+
+        {!isMinimized && <div className={`absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize flex items-end justify-end p-1 transition-opacity z-10 ${chromeless ? (isSelected ? 'opacity-100' : 'opacity-0 hover:opacity-100') : 'opacity-0 hover:opacity-100 bg-gradient-to-tl from-gray-100 to-transparent'}`} onMouseDown={handleResizeStart}> <Maximize2 size={16} className={`${chromeless ? 'text-blue-400' : 'text-gray-400'} transform rotate-90`} /> </div>}
+      </div>);
     };
+
+    const SimpleTextWidget = ({ widget, updateData }) => {
+      const { content = "", styles = {} } = widget.data;
+      const [showMenu, setShowMenu] = useState(false);
+      const editorRef = useRef(null);
+      const isFocused = useRef(false);
+
+      // Auto-scale font based on height, but cap min size
+      const fontSize = Math.max(16, widget.size.height * 0.4);
+
+      // Auto-Size Logic
+      useEffect(() => {
+        if (!editorRef.current || !widget.updateLayout) return;
+        const el = editorRef.current;
+
+        const neededHeight = Math.max(80, el.scrollHeight); // 80 is min height
+
+        // Only update if difference is significant to prevent loops
+        if (Math.abs(neededHeight - widget.size.height) > 10) {
+          const cappedHeight = Math.min(600, neededHeight);
+          if (Math.abs(cappedHeight - widget.size.height) > 10) {
+            requestAnimationFrame(() => {
+              widget.updateLayout(widget.id, widget.position, { width: widget.size.width, height: cappedHeight });
+            });
+          }
+        }
+      }, [content, widget.size.width, widget.id]);
+
+      const toggleStyle = (style) => {
+        document.execCommand(style, false, null);
+        editorRef.current.focus();
+      };
+
+      const handleBlur = (e) => {
+        isFocused.current = false;
+        updateData(widget.id, { content: e.target.innerHTML });
+      };
+
+      const handleFocus = () => {
+        isFocused.current = true;
+      };
+
+      return (
+        <div className="w-full h-full relative group" onClick={() => setShowMenu(true)}>
+          {showMenu && (
+            <div className="absolute -top-12 left-0 flex gap-1 bg-white p-1 rounded-xl shadow-xl border border-gray-100 z-50 animate-in fade-in slide-in-from-bottom-2" onMouseDown={e => e.preventDefault()}>
+              <button onClick={() => toggleStyle('bold')} className="p-1.5 hover:bg-gray-100 rounded text-slate-700"><Bold size={14} /></button>
+              <button onClick={() => toggleStyle('italic')} className="p-1.5 hover:bg-gray-100 rounded text-slate-700"><Italic size={14} /></button>
+              <button onClick={() => toggleStyle('underline')} className="p-1.5 hover:bg-gray-100 rounded text-slate-700"><Underline size={14} /></button>
+              <div className="w-px h-6 bg-gray-200 mx-1" />
+              <button onClick={() => toggleStyle('insertUnorderedList')} className="p-1.5 hover:bg-gray-100 rounded text-slate-700"><List size={14} /></button>
+              <button onClick={() => setShowMenu(false)} className="ml-2 p-1.5 hover:bg-gray-100 rounded text-gray-400"><X size={14} /></button>
+            </div>
+          )}
+          <div
+            ref={editorRef}
+            contentEditable
+            className="w-full h-full outline-none p-2 font-['Poppins'] leading-tight resize-none overflow-hidden"
+            style={{ fontSize: fontSize + 'px', ...styles }}
+            dangerouslySetInnerHTML={isFocused.current ? undefined : { __html: content }}
+            onInput={(e) => updateData(widget.id, { content: e.target.innerHTML })}
+            onBlur={handleBlur}
+            onFocus={handleFocus}
+            onKeyDown={(e) => e.stopPropagation()}
+          />
+        </div>
+      );
+    };
+
     const TimerWidget = ({ widget, updateData }) => {
       const { durationMinutes = 2, timeLeft = 120, isRunning = false, fontSize = 16, mode = 'visual', color = 'blue', isMuted = false } = widget.data;
       const [customTime, setCustomTime] = useState("");
@@ -1496,7 +1637,8 @@
     };
 
     const RandomizerWidget = ({ widget, updateData, roster }) => {
-      const { currentName, isAnimating, fontSize = 16, pickedStudents = [] } = widget.data;
+      const { currentName, isAnimating, fontSize = 16, pickedStudents = [], bgColor = '#e0e7ff' } = widget.data;
+      const [showSettings, setShowSettings] = useState(false);
       const steps = useRef(0);
       const intervalRef = useRef(null);
       const activeStudents = roster.filter(s => s.active);
@@ -1504,7 +1646,6 @@
 
       useEffect(() => {
         if (isAnimating) {
-          // If no unpicked students, reset the list before picking
           let availableStudents = unpickedStudents.length > 0 ? unpickedStudents : activeStudents;
           if (availableStudents.length === 0) { updateData(widget.id, { isAnimating: false }); return; }
 
@@ -1514,11 +1655,8 @@
             steps.current++;
             if (steps.current >= 20) {
               if (intervalRef.current) clearInterval(intervalRef.current);
-              // Add the final picked name to the picked list
               const finalName = widget.data.currentName || randomName;
-              const newPickedList = unpickedStudents.length > 0
-                ? [...pickedStudents, finalName]
-                : [finalName]; // Reset list if everyone was picked
+              const newPickedList = unpickedStudents.length > 0 ? [...pickedStudents, finalName] : [finalName];
               updateData(widget.id, { isAnimating: false, pickedStudents: newPickedList });
               steps.current = 0;
             }
@@ -1528,30 +1666,64 @@
       }, [isAnimating, widget.id, activeStudents.length]);
 
       const resetPicked = () => updateData(widget.id, { pickedStudents: [], currentName: null });
+      const removePicked = (name) => updateData(widget.id, { pickedStudents: pickedStudents.filter(n => n !== name) });
       const scaledFS = (fontSize / 16) * 30;
       const pickedCount = pickedStudents.length;
       const totalCount = activeStudents.length;
 
+      if (showSettings) {
+        return (
+          <div className="flex flex-col h-full bg-white p-3 relative animate-in fade-in slide-in-from-right-4 duration-200">
+            <div className="flex justify-between items-center mb-2 border-b pb-2">
+              <h3 className="font-bold text-gray-700 text-sm">Settings</h3>
+              <button onClick={() => setShowSettings(false)} className="p-1 hover:bg-gray-100 rounded-full"><X size={16} /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Background Color</label>
+                <div className="flex gap-2 flex-wrap">
+                  {['#e0e7ff', '#fee2e2', '#dcfce7', '#fef9c3', '#f3e8ff', '#ffffff'].map(c => (
+                    <button key={c} onClick={() => updateData(widget.id, { bgColor: c })} className={`w-6 h-6 rounded-full border shadow-sm ${bgColor === c ? 'ring-2 ring-gray-400' : ''}`} style={{ backgroundColor: c }} />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase">Picked History ({pickedCount})</label>
+                  <button onClick={resetPicked} className="text-[10px] text-red-500 font-bold hover:underline">Reset All</button>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {pickedStudents.map(name => (
+                    <div key={name} className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md text-xs border">
+                      <span className="truncate max-w-[80px]">{name}</span>
+                      <button onClick={() => removePicked(name)} className="text-gray-400 hover:text-red-500"><X size={12} /></button>
+                    </div>
+                  ))}
+                  {pickedStudents.length === 0 && <span className="text-xs text-gray-300 italic">No history yet</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       return (
-        <div className="flex flex-col items-center justify-center h-full p-4 bg-indigo-50 relative group">
-          {/* Reset button */}
-          <button onClick={resetPicked} className="absolute top-2 right-2 p-1.5 text-gray-300 hover:text-indigo-600 rounded-full hover:bg-indigo-100 opacity-0 group-hover:opacity-100 transition-opacity z-20" title="Reset picked students">
-            <RefreshCw size={16} />
+        <div className="flex flex-col items-center justify-center h-full p-4 relative group transition-colors duration-300" style={{ backgroundColor: bgColor }}>
+          <button onClick={() => setShowSettings(true)} className="absolute top-2 right-2 p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+            <Settings size={16} />
           </button>
 
-          {/* Progress indicator */}
-          <div className="absolute top-2 left-2 text-[10px] font-bold text-indigo-400 uppercase tracking-wider opacity-60">
-            {pickedCount}/{totalCount} picked
+          <div className="absolute top-2 left-2 text-[10px] font-bold text-black/40 uppercase tracking-wider">
+            {pickedCount}/{totalCount}
           </div>
 
           <div className="flex-1 flex items-center justify-center w-full">
-            <h2 className="font-bold text-center break-words text-indigo-900 leading-tight" style={{ fontSize: scaledFS + 'px' }}>{currentName || <span className="text-indigo-200">?</span>}</h2>
+            <h2 className="font-bold text-center break-words text-indigo-900 leading-tight" style={{ fontSize: scaledFS + 'px' }}>{currentName || <span className="opacity-20">?</span>}</h2>
           </div>
-          <button onClick={() => { steps.current = 0; updateData(widget.id, { isAnimating: true }); }} disabled={isAnimating || activeStudents.length === 0} className="bg-indigo-600 text-white px-8 py-3 rounded-full flex gap-2 items-center font-bold shadow-lg transition-all active:scale-95">
+          <button onClick={() => { steps.current = 0; updateData(widget.id, { isAnimating: true }); }} disabled={isAnimating || activeStudents.length === 0} className="bg-indigo-600 text-white px-8 py-3 rounded-full flex gap-2 items-center font-bold shadow-lg transition-all active:scale-95 hover:bg-indigo-700">
             <Shuffle size={18} /> Pick Random
           </button>
-          {activeStudents.length === 0 && <div className="absolute bottom-16 text-xs text-red-500 font-bold">No active students in roster!</div>}
-          {unpickedStudents.length === 0 && activeStudents.length > 0 && <div className="absolute bottom-16 text-xs text-green-600 font-bold">All picked! Will reset on next pick.</div>}
+          {unpickedStudents.length === 0 && activeStudents.length > 0 && <div className="absolute bottom-16 text-xs text-green-600 font-bold">All picked! Cycle complete.</div>}
         </div>
       );
     };
@@ -1567,25 +1739,59 @@
       const count = activeStudents.length;
       const scaledFS = (fontSize / 16) * 14;
 
-      // Responsive column calculation
+      // Responsive column calculation with Debounce
       useEffect(() => {
         if (!containerRef.current) return;
+
+        let timeoutId;
         const observer = new ResizeObserver((entries) => {
           for (let entry of entries) {
-            const width = entry.contentRect.width;
-            // Adjusted: wider minimum column width to prevent squishing
-            const newCols = Math.max(1, Math.min(8, Math.floor(width / 150)));
-            setColumns(newCols);
+            // Debounce the column update to prevent rapid flickering
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+              const width = entry.contentRect.width;
+              // Adjusted: 180px min width for better spacing, max 8 columns
+              const newCols = Math.max(1, Math.min(8, Math.floor(width / 180)));
+              setColumns(newCols);
+            }, 50);
           }
         });
         observer.observe(containerRef.current);
-        return () => observer.disconnect();
+        return () => {
+          observer.disconnect();
+          if (timeoutId) clearTimeout(timeoutId);
+        };
       }, []);
+
+      // Dynamic Height Recalculation on Resize/Content Change
+      useEffect(() => {
+        if (!widget.updateLayout || groups.length === 0) return;
+
+        const currentRows = Math.ceil(groups.length / columns);
+        let maxInGroup = 0;
+        groups.forEach(g => maxInGroup = Math.max(maxInGroup, g.length));
+
+        // Updated Height Calc: More generous (32px per student instead of 28, + more padding)
+        const rowHeight = 70 + (maxInGroup * 32);
+        const estimatedHeight = 140 + (currentRows * rowHeight) + ((currentRows - 1) * 20);
+
+        // Cap max height to stay on screen
+        const maxHeight = window.innerHeight - 150;
+        const finalHeight = Math.min(estimatedHeight, maxHeight);
+
+        // Increased threshold to 20px to prevent minor jitter
+        if (Math.abs(finalHeight - widget.size.height) > 20) {
+          requestAnimationFrame(() => { // Avoid ResizeObserver loop limit
+            widget.updateLayout(widget.id, widget.position, { width: widget.size.width, height: finalHeight });
+          });
+        }
+      }, [columns, groups, widget.size.width, widget.id]);
 
       const createGroups = (countNeeded) => {
         const shuffled = [...activeStudents].sort(() => Math.random() - 0.5);
         const newG = Array.from({ length: countNeeded }, () => []);
         shuffled.forEach((s, i) => newG[i % countNeeded].push(s));
+
         updateData(widget.id, { groups: newG, groupCount: countNeeded });
       };
 
@@ -1852,14 +2058,15 @@
     // Draw tool emojis/stickers
     const DRAW_EMOJIS = ['⭐', '❤️', '✅', '❌', '👍', '👎', '🎯', '🏆', '🔥', '💡', '📌', '🎨', '📝', '🌟', '✨', '🎉', '💯', '👀', '🤔', '💪', '🌈', '⚡', '🎁', '😊', '🙌'];
 
+
+
     const WhiteboardWidget = ({ widget, updateData }) => {
-      const { tool = 'pen', color = '#000000', size = 5, lines = [], textItems = [], emojiItems = [], imageItems = [] } = widget.data;
-      const canvasRef = useRef(null);
-      const isDrawing = useRef(false);
+      const { lines = [], tool = 'pen', color = '#000000', size = 5, textItems = [], emojiItems = [], imageItems = [], fontSize = 16 } = widget.data;
       const [showColorPicker, setShowColorPicker] = useState(false);
       const [showEmojiPicker, setShowEmojiPicker] = useState(false);
       const fileInputRef = useRef(null);
       const [selectedItem, setSelectedItem] = useState(null);
+      const svgRef = useRef(null);
 
       // History
       const [history, setHistory] = useState([]);
@@ -1888,247 +2095,156 @@
         setSelectedItem(null);
       };
 
-      // Drawing Logic
+      // Drawing Logic (SVG Based)
+      const isDrawing = useRef(false);
 
-      const lastPointRef = useRef(null);
+      const getPoint = (e) => {
+        const rect = svgRef.current.getBoundingClientRect();
+        return { x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height };
+      }
 
-      const handleCanvasMouseDown = (e) => {
-        if (tool !== 'pen' && tool !== 'eraser') return;
-        addToHistory();
-        const rect = canvasRef.current.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width;
-        const y = (e.clientY - rect.top) / rect.height;
-        isDrawing.current = true;
+      const handleMouseDown = (e) => {
+        // If clicking on a tool control or existing item handled by other listeners, ignore
+        if (e.defaultPrevented) return;
 
-        // Reset last point for speed calc
-        lastPointRef.current = { x, y, time: Date.now(), w: size };
-
-        // Start a new line path
-        updateData(widget.id, { lines: [...lines, { points: [{ x, y, w: size }], color: tool === 'eraser' ? '#ffffff' : color, size, tool }] });
+        if (tool === 'pen' || tool === 'eraser') {
+          addToHistory();
+          isDrawing.current = true;
+          const p = getPoint(e);
+          const newLine = {
+            id: Date.now().toString(),
+            points: [p],
+            color: tool === 'eraser' ? '#ffffff' : color,
+            size: size,
+            isEraser: tool === 'eraser'
+          };
+          updateData(widget.id, { lines: [...lines, newLine] });
+        } else if (tool === 'text') {
+          // Create Text
+          addToHistory();
+          const p = getPoint(e);
+          const newText = { id: Date.now().toString(), x: p.x, y: p.y, text: "Text", color: color, scale: 1, rotation: 0 };
+          updateData(widget.id, { textItems: [...textItems, newText] });
+          // Select it immediately to edit
+          setSelectedItem({ type: 'text', id: newText.id });
+          updateData(widget.id, { tool: 'move' }); // Switch to move/select mode after creating
+        } else if (tool === 'move') {
+          // Clicked on empty space: deselect
+          setSelectedItem(null);
+        }
       };
 
-      const moveDrawing = (e) => {
+      const handleMouseMove = (e) => {
         if (!isDrawing.current) return;
         if (tool !== 'pen' && tool !== 'eraser') return;
-        const rect = canvasRef.current.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width;
-        const y = (e.clientY - rect.top) / rect.height;
-        const now = Date.now();
 
-        // Speed Sensitivity Calculation
-        let newWidth = size;
-        if (tool === 'pen' && lastPointRef.current) {
-          const dx = (x - lastPointRef.current.x) * rect.width;
-          const dy = (y - lastPointRef.current.y) * rect.height;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const dt = now - lastPointRef.current.time;
-
-          if (dt > 0) {
-            const speed = dist / dt; // pixels per ms
-            // Dynamic width: Faster = Thinner
-            // More dramatic range (0.1x to 3x)
-            const targetWidth = Math.max(size * 0.1, Math.min(size * 3.0, size * (1.5 - speed / 3)));
-            // Smoothing
-            newWidth = lastPointRef.current.w * 0.5 + targetWidth * 0.5;
-          }
-        }
-
-        lastPointRef.current = { x, y, time: now, w: newWidth };
-
-        // Append point to last line
+        const p = getPoint(e);
         const newLines = [...lines];
-        if (newLines.length > 0) {
-          const lastLine = { ...newLines[newLines.length - 1] };
-          lastLine.points = [...lastLine.points, { x, y, w: newWidth }];
-          newLines[newLines.length - 1] = lastLine;
-          updateData(widget.id, { lines: newLines });
-        }
+        const lastLine = { ...newLines[newLines.length - 1] };
+        // Optimization: Don't add points if too close
+        const lastPoint = lastLine.points[lastLine.points.length - 1];
+        const dist = Math.sqrt(Math.pow(p.x - lastPoint.x, 2) + Math.pow(p.y - lastPoint.y, 2));
+        if (dist < 0.005) return; // threshold
+
+        lastLine.points = [...lastLine.points, p];
+        newLines[newLines.length - 1] = lastLine;
+        updateData(widget.id, { lines: newLines });
       };
 
-      const stopDrawing = () => {
+      const handleMouseUp = () => {
         isDrawing.current = false;
+        // Simplify path? (Optional optimization)
       };
 
-      // Keep lines in a ref so resize observer can access latest without re-subscribing
-      const linesRef = useRef(lines);
-      useEffect(() => { linesRef.current = lines; }, [lines]);
+      // Selection & Transform Logic
+      const dragStart = useRef(null);
 
-      // Simple draw function that reads from linesRef
-      const drawCanvas = useCallback(() => {
-        const canvas = canvasRef.current;
-        if (!canvas || canvas.width === 0) return;
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-
-        const dpr = window.devicePixelRatio || 1;
-        const currentLines = linesRef.current;
-        currentLines.forEach(l => {
-          if (l.points && l.points.length > 0) {
-            if (!l.points[0].w || l.tool === 'eraser') {
-              ctx.beginPath();
-              ctx.strokeStyle = l.color;
-              ctx.lineWidth = l.size * dpr;
-              ctx.moveTo(l.points[0].x * canvas.width, l.points[0].y * canvas.height);
-              l.points.forEach(p => ctx.lineTo(p.x * canvas.width, p.y * canvas.height));
-              ctx.stroke();
-            } else {
-              ctx.fillStyle = l.color;
-              for (let i = 0; i < l.points.length - 1; i++) {
-                const p1 = l.points[i], p2 = l.points[i + 1];
-                const x1 = p1.x * canvas.width, y1 = p1.y * canvas.height;
-                const x2 = p2.x * canvas.width, y2 = p2.y * canvas.height;
-                const dist = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-                if (dist < 0.5) continue;
-                const angle = Math.atan2(y2 - y1, x2 - x1);
-                const sin = Math.sin(angle), cos = Math.cos(angle);
-                const dx1 = sin * (p1.w * dpr) * 0.5, dy1 = cos * (p1.w * dpr) * 0.5;
-                const dx2 = sin * (p2.w * dpr) * 0.5, dy2 = cos * (p2.w * dpr) * 0.5;
-                ctx.beginPath();
-                ctx.moveTo(x1 - dx1, y1 + dy1);
-                ctx.lineTo(x1 + dx1, y1 - dy1);
-                ctx.lineTo(x2 + dx2, y2 - dy2);
-                ctx.lineTo(x2 - dx2, y2 + dy2);
-                ctx.closePath();
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(x1, y1, (p1.w * dpr) * 0.5, 0, Math.PI * 2);
-                ctx.fill();
-              }
-              if (l.points.length > 0) {
-                const last = l.points[l.points.length - 1];
-                ctx.beginPath();
-                ctx.arc(last.x * canvas.width, last.y * canvas.height, (last.w * dpr) * 0.5, 0, Math.PI * 2);
-                ctx.fill();
-              }
-            }
-          }
-        });
-      }, []);
-
-      // Redraw when lines change
-      useEffect(() => { drawCanvas(); }, [lines, drawCanvas]);
-
-      // Resize observer runs once on mount, calls drawCanvas which reads linesRef
-      useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const resizeCanvas = () => {
-          const rect = canvas.getBoundingClientRect();
-          if (rect.width === 0 || rect.height === 0) return;
-          const dpr = window.devicePixelRatio || 1;
-          canvas.style.width = `${rect.width}px`;
-          canvas.style.height = `${rect.height}px`;
-          canvas.width = rect.width * dpr;
-          canvas.height = rect.height * dpr;
-          drawCanvas();
-        };
-
-        const observer = new ResizeObserver(() => requestAnimationFrame(resizeCanvas));
-        observer.observe(canvas);
-        setTimeout(resizeCanvas, 10); // Small delay for layout
-
-        return () => observer.disconnect();
-      }, [drawCanvas]);
-
-      // Item Drag Logic
-      const dragItemStart = useRef(null);
-      const isDraggingItem = useRef(false);
-      const draggingId = useRef(null);
-      const dragMode = useRef('move'); // move, rotate, scale
-
-      const handleItemMouseDown = (e, type, id, mode = 'move') => {
-        // Fix for Double Event (Drag vs Canvas)
-        if (e.defaultPrevented) return;
-        e.preventDefault();
+      const handleItemDown = (e, type, id, mode = 'move') => {
         e.stopPropagation();
+        e.preventDefault(); // Prevent text selection/drag native
+        if (tool !== 'move') return;
 
         addToHistory();
         setSelectedItem({ type, id });
-        isDraggingItem.current = true;
-        draggingId.current = id;
-        dragMode.current = mode;
-
-        let item;
-        if (type === 'text') item = textItems.find(i => i.id === id);
-        if (type === 'emoji') item = emojiItems.find(i => i.id === id);
-        if (type === 'image') item = imageItems.find(i => i.id === id);
-
-        const rect = canvasRef.current.getBoundingClientRect();
-        dragItemStart.current = {
-          startX: item ? item.x : 0.5,
-          startY: item ? item.y : 0.5,
-          initialMx: e.clientX,
-          initialMy: e.clientY,
-          startScale: item ? (item.scale || 1) : 1,
-          startRotation: item ? (item.rotation || 0) : 0,
-          rect: rect
-        };
-      };
-
-      useEffect(() => {
-        const handleWindowMove = (e) => {
-          if (isDraggingItem.current && selectedItem) {
-            e.preventDefault();
-            const { type, id } = selectedItem;
-            const startData = dragItemStart.current;
-            const rect = startData.rect;
-
-            const updateList = (list, key) => {
-              var newList = [];
-              for (var i = 0; i < list.length; i++) {
-                if (list[i].id === id) {
-                  var item = list[i];
-                  var updates = {};
-                  if (dragMode.current === 'move') {
-                    const dx = (e.clientX - startData.initialMx) / rect.width;
-                    const dy = (e.clientY - startData.initialMy) / rect.height;
-                    updates = { x: startData.startX + dx, y: startData.startY + dy };
-                  } else if (dragMode.current === 'rotate') {
-                    const cx = startData.startX * rect.width + rect.left;
-                    const cy = startData.startY * rect.height + rect.top;
-                    const angle = Math.atan2(e.clientY - cy, e.clientX - cx) * (180 / Math.PI);
-                    updates = { rotation: angle + 90 };
-                  } else if (dragMode.current === 'scale') {
-                    const cx = startData.startX * rect.width + rect.left;
-                    const cy = startData.startY * rect.height + rect.top;
-                    const dist = Math.sqrt(Math.pow(e.clientX - cx, 2) + Math.pow(e.clientY - cy, 2));
-                    const startDist = Math.sqrt(Math.pow(startData.initialMx - cx, 2) + Math.pow(startData.initialMy - cy, 2));
-                    const scaleFactor = dist / (startDist || 1);
-                    updates = { scale: Math.max(0.2, startData.startScale * scaleFactor) };
-                  }
-                  newList.push({ ...item, ...updates });
-                } else {
-                  newList.push(list[i]);
-                }
-              }
-              var updateObj = {}; updateObj[key] = newList;
-              updateData(widget.id, updateObj);
-            };
-
-            if (type === 'text') updateList(textItems, 'textItems');
-            if (type === 'emoji') updateList(emojiItems, 'emojiItems');
-            if (type === 'image') updateList(imageItems, 'imageItems');
-          }
-        };
-
-        const handleWindowUp = () => {
-          isDraggingItem.current = false;
-          draggingId.current = null;
+        dragStart.current = {
+          type, id, mode,
+          mx: e.clientX, my: e.clientY,
+          ...getItemState(type, id)
         };
 
         window.addEventListener('mousemove', handleWindowMove);
         window.addEventListener('mouseup', handleWindowUp);
-        return () => {
-          window.removeEventListener('mousemove', handleWindowMove);
-          window.removeEventListener('mouseup', handleWindowUp);
-        };
-      }, [selectedItem, textItems, emojiItems, imageItems, widget.id]);
+      };
+
+      const getItemState = (type, id) => {
+        if (type === 'line') return lines.find(l => l.id === id); // lines assume full obj access? No, lines structure is diff
+        // For lines, we might need a derived position? SVG paths are absolute points.
+        // To move a line, we need to offset all its points.
+        if (type === 'line') {
+          const line = lines.find(l => l.id === id);
+          return { points: line.points }; // simplified
+        }
+        if (type === 'text') return textItems.find(i => i.id === id);
+        if (type === 'emoji') return emojiItems.find(i => i.id === id);
+        if (type === 'image') return imageItems.find(i => i.id === id);
+        return {};
+      };
+
+      const handleWindowMove = (e) => {
+        if (!dragStart.current) return;
+        const { type, id, mode, mx, my } = dragStart.current;
+        const rect = svgRef.current.getBoundingClientRect();
+        const dx = (e.clientX - mx) / rect.width;
+        const dy = (e.clientY - my) / rect.height;
+
+        if (mode === 'move') {
+          if (type === 'line') {
+            const originalPoints = dragStart.current.points;
+            const newPoints = originalPoints.map(p => ({ x: p.x + dx, y: p.y + dy }));
+            updateData(widget.id, { lines: lines.map(l => l.id === id ? { ...l, points: newPoints } : l) });
+          } else {
+            const startX = dragStart.current.x;
+            const startY = dragStart.current.y;
+            const listName = type + 'Items';
+            const list = widget.data[listName];
+            updateData(widget.id, { [listName]: list.map(i => i.id === id ? { ...i, x: startX + dx, y: startY + dy } : i) });
+          }
+        } else if (mode === 'rotate') {
+          // Basic rotation logic based on center
+          // ... simplifying for speed: usually requires finding center of obj
+          // For text/img/emoji, center is x,y.
+          // For line? Harder. Let's skip line rotation for now, allow move/delete.
+          if (type === 'line') return;
+
+          const cx = dragStart.current.x * rect.width + rect.left;
+          const cy = dragStart.current.y * rect.height + rect.top;
+          const angle = Math.atan2(e.clientY - cy, e.clientX - cx) * (180 / Math.PI);
+          const listName = type + 'Items';
+          const list = widget.data[listName];
+          updateData(widget.id, { [listName]: list.map(i => i.id === id ? { ...i, rotation: angle + 90 } : i) });
+        } else if (mode === 'scale') {
+          // Distance based scale
+          const cx = dragStart.current.x * rect.width + rect.left;
+          const cy = dragStart.current.y * rect.height + rect.top;
+          const dist = Math.sqrt(Math.pow(e.clientX - cx, 2) + Math.pow(e.clientY - cy, 2));
+          const startDist = Math.sqrt(Math.pow(mx - cx, 2) + Math.pow(my - cy, 2));
+          const factor = dist / (startDist || 1);
+
+          const listName = type + 'Items';
+          const list = widget.data[listName];
+          updateData(widget.id, { [listName]: list.map(i => i.id === id ? { ...i, scale: Math.max(0.2, (dragStart.current.scale || 1) * factor) } : i) });
+        }
+      };
+
+      const handleWindowUp = () => {
+        dragStart.current = null;
+        window.removeEventListener('mousemove', handleWindowMove);
+        window.removeEventListener('mouseup', handleWindowUp);
+      };
 
       const updateTextContent = (id, text) => {
-        addToHistory();
+        // Debounce or just update? Update is fine for local state, but for history maybe bad.
+        // Let's rely on blur or specific action? No, interactive typing needs updating state.
         updateData(widget.id, { textItems: textItems.map(t => t.id === id ? { ...t, text } : t) });
       };
 
@@ -2138,6 +2254,7 @@
         const newItem = { id: Date.now().toString(), x: 0.5, y: 0.5, emoji, scale: 1 };
         updateData(widget.id, { emojiItems: [...emojiItems, newItem] });
         setShowEmojiPicker(false);
+        updateData(widget.id, { tool: 'move' }); // switch to move to drag it
       };
 
       const handleImageUpload = (e) => {
@@ -2151,22 +2268,56 @@
               const aspect = img.width / img.height;
               const newItem = { id: Date.now().toString(), x: 0.5, y: 0.5, src: ev.target.result, scale: 1, width: 200, height: 200 / aspect };
               updateData(widget.id, { imageItems: [...imageItems, newItem] });
+              updateData(widget.id, { tool: 'move' });
             };
           };
           reader.readAsDataURL(file);
         }
       };
 
-      const savePNG = () => { var link = document.createElement('a'); link.download = 'whiteboard.png'; link.href = canvasRef.current.toDataURL(); link.click(); };
-      const clearAll = () => { addToHistory(); updateData(widget.id, { lines: [], textItems: [], emojiItems: [], imageItems: [] }); };
+      const savePNG = () => {
+        // SVG to Canvas to PNG
+        const svg = svgRef.current;
+        const canvas = document.createElement('canvas');
+        const bbox = svg.getBoundingClientRect();
+        canvas.width = bbox.width;
+        canvas.height = bbox.height;
+        const ctx = canvas.getContext('2d');
+        const data = (new XMLSerializer()).serializeToString(svg);
+        const DOMURL = window.URL || window.webkitURL || window;
+        const img = new Image();
+        const svgBlob = new Blob([data], { type: 'image/svg+xml;charset=utf-8' });
+        const url = DOMURL.createObjectURL(svgBlob);
+        img.onload = function () {
+          ctx.drawImage(img, 0, 0);
+          DOMURL.revokeObjectURL(url);
+          const imgURI = canvas.toDataURL('image/png');
+          const link = document.createElement('a');
+          link.download = 'whiteboard.png';
+          link.href = imgURI;
+          link.click();
+        };
+        img.src = url;
+      };
+
       const deleteSelectedItem = () => {
         if (!selectedItem) return;
         addToHistory();
         const { type, id } = selectedItem;
+        if (type === 'line') updateData(widget.id, { lines: lines.filter(i => i.id !== id) });
         if (type === 'text') updateData(widget.id, { textItems: textItems.filter(i => i.id !== id) });
         if (type === 'emoji') updateData(widget.id, { emojiItems: emojiItems.filter(i => i.id !== id) });
         if (type === 'image') updateData(widget.id, { imageItems: imageItems.filter(i => i.id !== id) });
         setSelectedItem(null);
+      };
+
+      const clearAll = () => { addToHistory(); updateData(widget.id, { lines: [], textItems: [], emojiItems: [], imageItems: [] }); };
+
+      // Helper to generate Path d
+      const getLinePath = (points) => {
+        if (points.length === 0) return '';
+        const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x * 100}% ${p.y * 100}%`).join(' ');
+        return d;
       };
 
       return (
@@ -2212,51 +2363,86 @@
               <button onClick={clearAll} className="text-gray-400 hover:text-red-500 p-2" title="Clear All"><RotateCcw size={18} /></button>
             </div>
           </div>
-          <div className="flex-1 relative overflow-hidden bg-white cursor-crosshair" onClick={(e) => { if (e.target === e.currentTarget && tool === 'move') setSelectedItem(null); }}>
-            {/* Layers: Items Bottom, Canvas Top */}
-            <div className="absolute inset-0 z-0">
+
+          <div className="flex-1 relative overflow-hidden bg-white cursor-crosshair">
+            {/* SVG Interface */}
+            <svg
+              ref={svgRef}
+              className="absolute inset-0 w-full h-full touch-none z-10"
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+            >
+              {/* Images */}
               {imageItems.map(img => (
-                <div key={img.id} onMouseDown={(e) => handleItemMouseDown(e, 'image', img.id)} className={`absolute cursor-move group ${selectedItem?.id === img.id ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`} style={{ left: `${img.x * 100}%`, top: `${img.y * 100}%`, transform: 'translate(-50%, -50%) rotate(' + (img.rotation || 0) + 'deg)', width: (img.width || 100) * (img.scale || 1), height: (img.height || 100) * (img.scale || 1) }}>
-                  <img src={img.src} draggable={false} className="w-full h-full object-contain pointer-events-none" />
-                  {selectedItem?.id === img.id && (
-                    <>
-                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-6 h-6 bg-white border border-blue-500 rounded-full shadow cursor-grab flex items-center justify-center p-1 z-50" onMouseDown={(e) => handleItemMouseDown(e, 'image', img.id, 'rotate')}><RotateCw size={12} className="text-blue-600" /></div>
-                      <div className="absolute -bottom-3 -right-3 w-5 h-5 bg-white border-2 border-blue-500 rounded-full shadow cursor-nwse-resize z-50" onMouseDown={(e) => handleItemMouseDown(e, 'image', img.id, 'scale')} />
-                    </>
-                  )}
-                </div>
+                <foreignObject key={img.id} x={(img.x * widget.size.width) - ((img.width || 100) * (img.scale || 1)) / 2} y={(img.y * widget.size.height) - ((img.height || 100) * (img.scale || 1)) / 2} width={(img.width || 100) * (img.scale || 1)} height={(img.height || 100) * (img.scale || 1)}
+                  style={{ transform: `rotate(${img.rotation || 0}deg)`, transformOrigin: 'center' }}
+                  onMouseDown={(e) => handleItemDown(e, 'image', img.id)}
+                >
+                  <div className={`w-full h-full relative ${selectedItem?.id === img.id ? 'ring-2 ring-blue-500' : ''}`}>
+                    <img src={img.src} className="w-full h-full object-contain pointer-events-none" />
+                    {selectedItem?.id === img.id && (
+                      <>
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border border-blue-500 rounded-full cursor-grab" onMouseDown={(e) => handleItemDown(e, 'image', img.id, 'rotate')} />
+                        <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-white border border-blue-500 rounded-full cursor-nwse-resize" onMouseDown={(e) => handleItemDown(e, 'image', img.id, 'scale')} />
+                      </>
+                    )}
+                  </div>
+                </foreignObject>
               ))}
 
+              {/* Lines */}
+              {lines.map(l => (
+                <path
+                  key={l.id}
+                  d={getLinePath(l.points)}
+                  stroke={l.color}
+                  strokeWidth={l.size}
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  onMouseDown={(e) => handleItemDown(e, 'line', l.id)}
+                  style={{ cursor: tool === 'move' ? 'pointer' : 'crosshair', filter: selectedItem?.id === l.id ? 'drop-shadow(0 0 2px blue)' : 'none' }}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+
+              {/* Text */}
               {textItems.map(t => (
-                <div key={t.id} onMouseDown={(e) => handleItemMouseDown(e, 'text', t.id)} onClick={(e) => { e.stopPropagation(); setSelectedItem({ type: 'text', id: t.id }); }} className={`absolute cursor-move ${selectedItem?.id === t.id ? 'ring-2 ring-blue-500 ring-offset-4 rounded' : ''}`} style={{ left: `${t.x * 100}%`, top: `${t.y * 100}%`, transform: `translate(-50%, -50%) rotate(${t.rotation || 0}deg)` }}>
-                  {selectedItem?.id === t.id ? (
-                    <>
-                      <div className="relative">
-                        <input value={t.text} onMouseDown={(e) => { e.stopPropagation(); }} onChange={e => updateTextContent(t.id, e.target.value)} className="bg-transparent border-none outline-none font-bold text-center min-w-[50px]" style={{ color: t.color, fontSize: `${16 * (t.scale || 1)}px` }} autoFocus />
-                      </div>
-                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-6 h-6 bg-white border border-blue-500 rounded-full shadow cursor-grab flex items-center justify-center p-1 z-50" onMouseDown={(e) => handleItemMouseDown(e, 'text', t.id, 'rotate')}><RotateCw size={12} className="text-blue-600" /></div>
-                      <div className="absolute -bottom-3 -right-6 w-5 h-5 bg-white border-2 border-blue-500 rounded-full shadow cursor-nwse-resize z-50" onMouseDown={(e) => handleItemMouseDown(e, 'text', t.id, 'scale')} />
-                    </>
-                  ) : (
-                    <div className="font-bold whitespace-nowrap select-none" style={{ color: t.color, fontSize: `${16 * (t.scale || 1)}px` }}>{t.text}</div>
-                  )}
-                </div>
+                <foreignObject key={t.id} x={(t.x * widget.size.width) - 100} y={(t.y * widget.size.height) - 20} width="200" height="100"
+                  style={{ transform: `rotate(${t.rotation || 0}deg)`, transformOrigin: 'center', pointerEvents: 'none' }}
+                >
+                  <div className={`flex justify-center items-center ${selectedItem?.id === t.id ? 'border border-blue-500' : ''}`} style={{ pointerEvents: 'auto' }} onMouseDown={(e) => handleItemDown(e, 'text', t.id)}>
+                    <input
+                      value={t.text}
+                      onChange={(e) => updateTextContent(t.id, e.target.value)}
+                      className="bg-transparent border-none outline-none font-bold text-center w-full"
+                      style={{ color: t.color, fontSize: `${16 * (t.scale || 1)}px` }}
+                    />
+                    {selectedItem?.id === t.id && (
+                      <>
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border border-blue-500 rounded-full cursor-grab" onMouseDown={(e) => handleItemDown(e, 'text', t.id, 'rotate')} />
+                        <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-white border border-blue-500 rounded-full cursor-nwse-resize" onMouseDown={(e) => handleItemDown(e, 'text', t.id, 'scale')} />
+                      </>
+                    )}
+                  </div>
+                </foreignObject>
               ))}
 
+              {/* Emojis */}
               {emojiItems.map(emoji => (
-                <div key={emoji.id} onMouseDown={(ev) => handleItemMouseDown(ev, 'emoji', emoji.id)} onClick={(e) => { e.stopPropagation(); setSelectedItem({ type: 'emoji', id: emoji.id }); }} className={`absolute cursor-move select-none ${selectedItem?.id === emoji.id ? 'ring-2 ring-blue-500 ring-offset-2 rounded-lg' : ''}`} style={{ left: `${emoji.x * 100}%`, top: `${emoji.y * 100}%`, transform: `translate(-50%, -50%) rotate(${emoji.rotation || 0}deg)`, fontSize: `${32 * (emoji.scale || 1)}px` }}>
-                  <span className="emoji relative inline-block"> {emoji.emoji} </span>
-                  {selectedItem?.id === emoji.id && (
-                    <>
-                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-6 h-6 bg-white border border-blue-500 rounded-full shadow cursor-grab flex items-center justify-center p-1 z-50" onMouseDown={(e) => handleItemMouseDown(e, 'emoji', emoji.id, 'rotate')}><RotateCw size={12} className="text-blue-600" /></div>
-                      <div className="absolute -bottom-3 -right-3 w-5 h-5 bg-white border-2 border-blue-500 rounded-full shadow cursor-nwse-resize z-50" onMouseDown={(e) => handleItemMouseDown(e, 'emoji', emoji.id, 'scale')} />
-                    </>
-                  )}
-                </div>
+                <text key={emoji.id} x={emoji.x * 100 + '%'} y={emoji.y * 100 + '%'}
+                  fontSize={`${32 * (emoji.scale || 1)}px`}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  style={{ cursor: 'move', transform: `rotate(${emoji.rotation || 0}deg)`, transformBox: 'fill-box', transformOrigin: 'center' }}
+                  onMouseDown={(e) => handleItemDown(e, 'emoji', emoji.id)}
+                >
+                  {emoji.emoji}
+                </text>
               ))}
-            </div>
-
-            <canvas ref={canvasRef} className={`absolute inset-0 w-full h-full touch-none z-10 ${tool === 'move' ? 'pointer-events-none' : 'pointer-events-auto cursor-crosshair'}`} onMouseDown={handleCanvasMouseDown} onMouseMove={moveDrawing} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} />
+            </svg>
 
             {showEmojiPicker && (
               <div className="absolute top-16 left-4 z-[100] bg-white rounded-xl shadow-2xl border border-gray-200 p-3 w-72 max-h-56 overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
@@ -2271,19 +2457,14 @@
 
     const SCHEDULE_EMOJIS = ['📚', '🎨', '🏃', '🎵', '💻', '🥪', '📝', '🔬', '🗣️', '🛑', '🚌', '🏠', '📅', '⭐', '🔔'];
 
-    const ScheduleWidget = ({ widget, updateData, onOpenSettings }) => {
+    const ScheduleWidget = ({ widget, updateData, onOpenSettings, selectedDate, scheduleTemplate, setScheduleTemplate }) => {
       const { fontSize = 14 } = widget.data;
       const [dragIndex, setDragIndex] = useState(null);
       const [emojiPickerIndex, setEmojiPickerIndex] = useState(null);
       const [timePickerState, setTimePickerState] = useState({ index: null, triggerRef: null });
-      const today = DAYS_OF_WEEK[new Date().getDay()];
-      const [scheduleData, setScheduleData] = useState(() => { const template = getScheduleTemplate(); return template[today] || []; });
 
-      useEffect(() => {
-        const refreshFromStorage = () => { const template = getScheduleTemplate(); setScheduleData(template[today] || []); };
-        const interval = setInterval(refreshFromStorage, 1000);
-        return () => clearInterval(interval);
-      }, [today]);
+      const dayName = DAYS_OF_WEEK[selectedDate ? selectedDate.getDay() : new Date().getDay()];
+      const items = (scheduleTemplate && scheduleTemplate[dayName]) ? scheduleTemplate[dayName] : [];
 
       useEffect(() => {
         const handleClickOutside = () => { setEmojiPickerIndex(null); setTimePickerState({ index: null, triggerRef: null }); };
@@ -2295,40 +2476,48 @@
       const parseTimeToMinutes = (time) => { if (!time) return 0; const [h, m] = time.split(':').map(Number); return h * 60 + m; };
 
       const isCurrentItem = (item, index) => {
+        // Only show current indicator if viewing TODAY
+        if (dayName !== DAYS_OF_WEEK[now.getDay()]) return false;
+
         const itemMinutes = parseTimeToMinutes(item.time);
-        const nextItem = scheduleData[index + 1];
+        const nextItem = items[index + 1];
         const nextMinutes = nextItem ? parseTimeToMinutes(nextItem.time) : 24 * 60;
         return currentMinutes >= itemMinutes && currentMinutes < nextMinutes;
       };
 
-      const saveScheduleData = (newItems) => { const template = getScheduleTemplate(); template[today] = newItems; saveScheduleTemplate(template); setScheduleData(newItems); };
-      const updateItem = (index, field, value) => { const newItems = [...scheduleData]; newItems[index] = { ...newItems[index], [field]: value }; saveScheduleData(newItems); };
-      const addItem = () => { const newItem = { id: Date.now().toString(), time: '09:00', emoji: '📚', title: 'New Activity', description: '' }; const newItems = [...scheduleData, newItem].sort((a, b) => parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time)); saveScheduleData(newItems); };
-      const removeItem = (index) => { const newItems = scheduleData.filter((_, i) => i !== index); saveScheduleData(newItems); };
+      const saveScheduleData = (newItems) => {
+        if (setScheduleTemplate) {
+          setScheduleTemplate(prev => ({ ...prev, [dayName]: newItems }));
+        }
+      };
+
+      const updateItem = (index, field, value) => { const newItems = [...items]; newItems[index] = { ...newItems[index], [field]: value }; saveScheduleData(newItems); };
+      const addItem = () => { const newItem = { id: Date.now().toString(), time: '09:00', emoji: '📚', title: 'New Activity', description: '' }; const newItems = [...items, newItem].sort((a, b) => parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time)); saveScheduleData(newItems); };
+      const removeItem = (index) => { const newItems = items.filter((_, i) => i !== index); saveScheduleData(newItems); };
 
       const handleDragStart = (index) => { setDragIndex(index); };
       const handleDragOver = (e) => { e.preventDefault(); };
-      const handleDrop = (targetIndex) => { if (dragIndex === null || dragIndex === targetIndex) return; const newItems = [...scheduleData]; const [moved] = newItems.splice(dragIndex, 1); newItems.splice(targetIndex, 0, moved); saveScheduleData(newItems); setDragIndex(null); };
+      const handleDrop = (targetIndex) => { if (dragIndex === null || dragIndex === targetIndex) return; const newItems = [...items]; const [moved] = newItems.splice(dragIndex, 1); newItems.splice(targetIndex, 0, moved); saveScheduleData(newItems); setDragIndex(null); };
       const selectEmoji = (index, emoji) => { updateItem(index, 'emoji', emoji); setEmojiPickerIndex(null); };
 
       return (
         <div className="flex flex-col h-full bg-gradient-to-br from-indigo-50 to-purple-50">
           <div className="h-10 bg-white/80 backdrop-blur border-b flex items-center justify-between px-3 shrink-0">
-            <h3 className="font-bold text-indigo-800 text-sm flex items-center gap-2"><Calendar size={16} /> {today}'s Schedule</h3>
+            <h3 className="font-bold text-indigo-800 text-sm flex items-center gap-2"><Calendar size={16} /> {dayName}'s Schedule</h3>
             <div className="flex gap-1">
               <button onClick={addItem} className="p-1.5 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors" title="Add activity"><Plus size={16} /></button>
               <button onClick={onOpenSettings} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors" title="Schedule settings"><Settings size={16} /></button>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-1 custom-scrollbar">
-            {scheduleData.length === 0 ? (
+            {items.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
                 <Calendar size={40} className="text-indigo-200 mb-3" />
-                <p className="text-indigo-400 text-sm font-medium mb-2">No schedule items yet</p>
+                <p className="text-indigo-400 text-sm font-medium mb-2">No items for {dayName}</p>
                 <button onClick={addItem} className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 flex items-center gap-1"><Plus size={14} /> Add Activity</button>
               </div>
             ) : (
-              scheduleData.map((item, index) => {
+              items.map((item, index) => {
                 const isCurrent = isCurrentItem(item, index);
                 return (
                   <div key={item.id} draggable onDragStart={() => handleDragStart(index)} onDragOver={handleDragOver} onDrop={() => handleDrop(index)} className={`relative group flex gap-2 p-2 rounded-lg border transition-all cursor-move w-full min-h-[4rem] ${isCurrent ? 'bg-indigo-100 border-indigo-400 ring-2 ring-indigo-300' : 'bg-white border-gray-200 hover:border-indigo-200'}`} style={{ zIndex: emojiPickerIndex === index ? 50 : 0 }}>
@@ -2474,13 +2663,8 @@
             </div>
             <div className="p-6">
               <label className="block text-sm font-bold text-gray-700 mb-2">Student Names (one per line)</label>
-              <textarea
-                value={text}
-                onChange={e => setText(e.target.value)}
-                className="w-full h-48 border-2 border-gray-200 rounded-xl p-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all custom-scrollbar resize-none font-sans"
-                style={{ fontFamily: '"Segoe UI Emoji", "Apple Color Emoji", sans-serif' }}
-                placeholder="Paste names here..."
-              />
+
+              className="w-full h-32 border-2 border-gray-200 rounded-xl p-4 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all custom-scrollbar resize-none font-sans"
             </div>
             <div className="p-4 border-t bg-gray-50 flex justify-end">
               <button
@@ -2583,54 +2767,57 @@
                 <div className="font-bold text-xs text-gray-800">Clock Style</div>
               </div>
 
-              {/* Grid Toggle Inserted Here */}
-              <div className="flex items-center justify-between bg-white p-2 rounded-lg border border-gray-200 mb-3 hover:border-indigo-300 transition-colors cursor-pointer" onClick={() => onToggleGrid(!isGridEnabled)}>
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <div className={`p-1.5 rounded-md ${isGridEnabled ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
-                    <Grid size={16} />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-gray-700">Snap to Grid</span>
-                    <span className="text-[9px] text-gray-400">Align widgets automatically</span>
+                  {/* Dark/Light Mode */}
+                  <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+                    <button
+                      onClick={() => onSelect({ ...currentBg, textColor: 'text-slate-800' }, 'all')}
+                      className={`p-1.5 rounded-md transition-all ${(!currentBg?.textColor || currentBg?.textColor === 'text-slate-800') ? 'bg-white shadow text-orange-500' : 'text-gray-400 hover:text-gray-600'}`}
+                      title="Dark Text"
+                    >
+                      <Moon size={14} />
+                    </button>
+                    <button
+                      onClick={() => onSelect({ ...currentBg, textColor: 'text-white' }, 'all')}
+                      className={`p-1.5 rounded-md transition-all ${currentBg?.textColor === 'text-white' ? 'bg-slate-700 shadow text-yellow-300' : 'text-gray-400 hover:text-gray-600'}`}
+                      title="Light Text"
+                    >
+                      <Sun size={14} />
+                    </button>
                   </div>
                 </div>
-                <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${isGridEnabled ? 'bg-indigo-500' : 'bg-gray-300'}`}>
-                  <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${isGridEnabled ? 'translate-x-4' : ''}`} />
+
+                {/* Snap to Grid */}
+                <div className="flex items-center gap-2 cursor-pointer bg-gray-50 hover:bg-gray-100 px-2 py-1.5 rounded-lg transition-colors border border-transparent hover:border-gray-200" onClick={() => onToggleGrid(!isGridEnabled)}>
+                  <div className="flex flex-col items-end mr-1">
+                    <span className="text-[10px] font-bold text-gray-600">Snap to Grid</span>
+                  </div>
+                  <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${isGridEnabled ? 'bg-indigo-500' : 'bg-gray-300'}`}>
+                    <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${isGridEnabled ? 'translate-x-4' : ''}`} />
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-3">
                 {CLOCK_STYLES.map(style => (
                   <div
                     key={style.id}
                     onClick={() => setClockStyle(style.id)}
-                    className={`cursor-pointer rounded-lg border p-2 flex flex-col items-center justify-center gap-2 transition-all hover:bg-white
-                               ${clockStyle === style.id ? 'border-indigo-600 bg-white ring-2 ring-indigo-200' : 'border-gray-200 text-gray-500'}
+                    className={`cursor-pointer rounded-xl border-2 p-2 flex flex-col items-center justify-center gap-2 transition-all hover:bg-white
+                               ${clockStyle === style.id ? 'border-blue-600 bg-blue-50/30' : 'border-slate-200 text-slate-500 hover:border-slate-300'}
                            `}
                   >
-                    <div className="w-full flex items-center justify-center">
+                    <div className="w-16 h-16 flex items-center justify-center pointer-events-none transform scale-90">
                       <ClockPreview style={style.id} />
                     </div>
-                    <span className="text-[8px] font-bold uppercase tracking-wider">{style.name}</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider truncate w-full text-center text-slate-600">{style.name}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <button
-              onClick={() => onSelect({ ...currentBg, textColor: 'text-slate-800' }, applyToAll ? 'all' : 'single')}
-              className={`p-1 rounded-md transition-all ${(!currentBg?.textColor || currentBg?.textColor === 'text-slate-800') ? 'bg-white shadow text-orange-500' : 'text-gray-400 hover:text-gray-600'}`}
-              title="Dark Text"
-            >
-              <Moon size={14} />
-            </button>
-            <button
-              onClick={() => onSelect({ ...currentBg, textColor: 'text-white' }, applyToAll ? 'all' : 'single')}
-              className={`p-1 rounded-md transition-all ${currentBg?.textColor === 'text-white' ? 'bg-slate-700 shadow text-yellow-300' : 'text-gray-400 hover:text-gray-600'}`}
-              title="Light Text"
-            >
-              <Sun size={14} />
-            </button>
+
           </div>
 
           <div className="p-1">
@@ -2801,9 +2988,10 @@
       };
 
       const handleGmailSubmit = () => {
-        const subject = encodeURIComponent('HomeRoom Feedback');
-        const body = encodeURIComponent(`Name: ${feedbackName}\nEmail: ${feedbackEmail}\n\nMessage:\n${feedbackMessage}`);
-        window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=jeffhennigar@gmail.com&su=${subject}&body=${body}`, '_blank');
+        const subject = encodeURIComponent(`Feedback from ${feedbackName || 'User'}`);
+        const body = encodeURIComponent(`${feedbackMessage}\n\nFrom: ${feedbackName}\nEmail: ${feedbackEmail}`);
+        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=jeffhennigar@gmail.com&su=${subject}&body=${body}`;
+        window.open(gmailUrl, '_blank');
         setFeedbackName(''); setFeedbackEmail(''); setFeedbackMessage('');
         setFeedbackStatus('Opening Gmail...');
         setTimeout(() => setFeedbackStatus(''), 3000);
@@ -2874,7 +3062,7 @@
 
       const tabs = [
         { id: 'appearance', label: 'Appearance', icon: <ImageIcon size={16} /> },
-        { id: 'roster', label: 'Roster', icon: <User size={16} /> },
+        { id: 'roster', label: 'Rosters', icon: <User size={16} /> },
         { id: 'schedule', label: 'Schedule', icon: <Calendar size={16} /> },
         { id: 'data', label: 'Data', icon: <Download size={16} /> },
         { id: 'about', label: 'About', icon: <Info size={16} /> },
@@ -3017,7 +3205,7 @@
                       <div className="p-4 flex flex-col" style={{ minHeight: '300px' }}>
                         <label className="text-xs font-bold text-gray-500 uppercase mb-2">Edit Names (One per line)</label>
                         <textarea
-                          className="flex-1 border-2 border-gray-200 rounded-xl p-4 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all custom-scrollbar resize-none font-medium text-slate-700"
+                          className="flex-1 border-2 border-gray-200 rounded-xl p-4 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all custom-scrollbar resize-none font-medium text-slate-700 h-24"
                           autoFocus
                           value={bulkText}
                           onChange={e => setBulkText(e.target.value)}
@@ -3341,9 +3529,24 @@
 
 
 
-    const CalendarWidget = ({ widget, updateData }) => {
+    const CalendarWidget = ({ widget, updateData, selectedDate, onSelectDate }) => {
       const { width, height } = widget.size;
       const [viewDate, setViewDate] = useState(new Date());
+
+      // Update view if selectedDate changes significantly (optional, maybe user wants to browse)
+      // For now, let's keep view independent unless explicitly linked
+
+      const onDayClick = (day) => {
+        const newDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
+        if (onSelectDate) onSelectDate(newDate);
+      };
+
+      const isSelected = (day) => {
+        if (!selectedDate) return false;
+        return day === selectedDate.getDate() &&
+          viewDate.getMonth() === selectedDate.getMonth() &&
+          viewDate.getFullYear() === selectedDate.getFullYear();
+      };
 
       // Auto-scale font based on widget size
       const baseSize = Math.min(width, height);
@@ -3393,7 +3596,12 @@
             <div className="grid grid-cols-7 gap-1 flex-1 content-start overflow-hidden">
               {blanks.map(i => <div key={`blank-${i}`} />)}
               {days.map(d => (
-                <div key={d} className={`aspect-square flex items-center justify-center rounded-full text-[0.9em] font-medium transition-all ${isToday(d) ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-slate-600 hover:bg-slate-50'}`}>
+                <div
+                  key={d}
+                  onClick={() => onDayClick(d)}
+                  className={`aspect-square flex items-center justify-center rounded-full text-[0.9em] font-medium transition-all cursor-pointer
+                        ${isSelected(d) ? 'bg-indigo-600 text-white ring-2 ring-indigo-200' : isToday(d) ? 'bg-blue-100 text-blue-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                >
                   {d}
                 </div>
               ))}
@@ -3492,7 +3700,7 @@
 
       const [dockOrder, setDockOrder] = useState(() => {
         const stored = getDockOrder();
-        const mainDefaults = ['SEAT_PICKER', 'GROUP_MAKER', 'SCHEDULE', 'CALENDAR', 'TEXT', 'TIMER', 'RANDOMIZER'];
+        const mainDefaults = ['SEAT_PICKER', 'GROUP_MAKER', 'SCHEDULE', 'CALENDAR', 'TEXT', 'OVERLAY_TEXT', 'TIMER', 'RANDOMIZER'];
         const drawerDefaults = ['TRAFFIC', 'QR', 'WEBCAM', 'DICE', 'VOTE', 'WHITEBOARD', 'YOUTUBE'];
         const allDefaults = [...mainDefaults, ...drawerDefaults];
 
@@ -3529,6 +3737,7 @@
       const [isDockLocked, setIsDockLocked] = useState(true);
       const [showMoreDrawer, setShowMoreDrawer] = useState(false);
       const drawerRef = useRef(null);
+
 
       // Undo/Redo History
       const [history, setHistory] = useState([]);
@@ -3626,8 +3835,13 @@
 
       const [showOnboarding, setShowOnboarding] = useState(false);
       const [showSettingsModal, setShowSettingsModal] = useState(false);
-      const [settingsInitialTab, setSettingsInitialTab] = useState('roster');
+      const [settingsInitialTab, setSettingsInitialTab] = useState('appearance');
       const [showBackupPrompt, setShowBackupPrompt] = useState(true); // Control visibility of backup prompt
+
+      // Link Schedule to Calendar
+      const [selectedDate, setSelectedDate] = useState(new Date());
+      const [scheduleTemplate, setScheduleTemplate] = useState(getScheduleTemplate());
+      useEffect(() => saveScheduleTemplate(scheduleTemplate), [scheduleTemplate]);
 
       // New Background State
       const [background, setBackground] = useState(getBackground());
@@ -3745,7 +3959,7 @@
       };
 
       // --- WIDGET MANAGEMENT ---
-      const addWidget = (type, extraData = {}) => { addToHistory(); const id = Date.now().toString(); const size = WIDGET_SIZES[type]; let startY = (window.innerHeight / 2) - (size.height / 2) + (Math.random() * 40 - 20); if (type === 'GROUP_MAKER') startY -= 100; const position = { x: (window.innerWidth / 2) - (size.width / 2) + (Math.random() * 40 - 20), y: startY }; let data = { fontSize: 16 }; if (type === 'TIMER') data = { ...data, timeLeft: 120, isRunning: false, mode: 'visual' }; if (type === 'RANDOMIZER') data = { ...data, students: getInitialStudents(), currentName: null, isAnimating: false }; if (type === 'GROUP_MAKER') data = { ...data, students: getInitialStudents(), groupCount: 4, groups: [] }; if (type === 'SEAT_PICKER') { const savedDesks = getSeatLayout(); if (savedDesks && savedDesks.length > 0) { data = { ...data, desks: savedDesks, isEditing: false }; } else { const initialStudents = getInitialStudents(); const initialDesks = initialStudents.slice(0, 8).map((s, i) => ({ id: `desk-${i}`, x: 50 + (i % 4) * 120, y: 50 + Math.floor(i / 4) * 100, student: s.name, color: 'blue', type: 'student', rotation: 0 })); data = { ...data, desks: initialDesks, isEditing: false }; } } if (type === 'TEXT') data = { ...data, mode: 'text', content: '', items: [] }; if (type === 'WEBCAM') data = { ...data, isMirrored: true, isActive: true }; if (type === 'DICE') data = { ...data, sides: 6, diceCount: 1, results: [1], isRolling: false }; if (type === 'TRAFFIC') data = { ...data, activeLight: null }; if (type === 'QR') data = { ...data, url: '' }; if (type === 'VOTE') data = { ...data, question: 'Class Poll', options: [{ id: 1, text: 'Yes', count: 0 }, { id: 2, text: 'No', count: 0 }] }; if (type === 'WHITEBOARD') data = { ...data, lines: [], color: '#000000', size: 5, tool: 'pen' }; if (type === 'SCHEDULE') { const template = getScheduleTemplate(); const today = DAYS_OF_WEEK[new Date().getDay()]; data = { ...data, items: template[today] || [] }; } if (type === 'YOUTUBE') { data = { ...data, youtubeUrl: '' }; } data = { ...data, ...extraData }; const newWidget = { id, type, position, size, zIndex: maxZIndex + 1, data, isMinimized: false }; setWidgets(prev => [...prev, newWidget]); setMaxZIndex(prev => prev + 1); setSelectedId(id); };
+      const addWidget = (type, extraData = {}) => { addToHistory(); const id = Date.now().toString(); const size = WIDGET_SIZES[type]; let startY = (window.innerHeight / 2) - (size.height / 2) + (Math.random() * 40 - 20); if (type === 'GROUP_MAKER') startY -= 100; const position = { x: (window.innerWidth / 2) - (size.width / 2) + (Math.random() * 40 - 20), y: startY }; let data = { fontSize: 16 }; if (type === 'TIMER') data = { ...data, timeLeft: 120, isRunning: false, mode: 'visual' }; if (type === 'RANDOMIZER') data = { ...data, students: getInitialStudents(), currentName: null, isAnimating: false, pickedStudents: [] }; if (type === 'GROUP_MAKER') data = { ...data, students: getInitialStudents(), groupCount: 4, groups: [] }; if (type === 'SEAT_PICKER') { const savedDesks = getSeatLayout(); if (savedDesks && savedDesks.length > 0) { data = { ...data, desks: savedDesks, isEditing: false }; } else { const initialStudents = getInitialStudents(); const initialDesks = initialStudents.slice(0, 8).map((s, i) => ({ id: `desk-${i}`, x: 50 + (i % 4) * 120, y: 50 + Math.floor(i / 4) * 100, student: s.name, color: 'blue', type: 'student', rotation: 0 })); data = { ...data, desks: initialDesks, isEditing: false }; } } if (type === 'TEXT') data = { ...data, mode: 'text', content: '', items: [] }; if (type === 'OVERLAY_TEXT') data = { ...data, content: '' }; if (type === 'WEBCAM') data = { ...data, isMirrored: true, isActive: true }; if (type === 'DICE') data = { ...data, sides: 6, diceCount: 1, results: [1], isRolling: false }; if (type === 'TRAFFIC') data = { ...data, activeLight: null }; if (type === 'QR') data = { ...data, url: '' }; if (type === 'VOTE') data = { ...data, question: 'Class Poll', options: [{ id: 1, text: 'Yes', count: 0 }, { id: 2, text: 'No', count: 0 }] }; if (type === 'WHITEBOARD') data = { ...data, lines: [], color: '#000000', size: 5, tool: 'pen' }; if (type === 'SCHEDULE') { const template = getScheduleTemplate(); const today = DAYS_OF_WEEK[new Date().getDay()]; data = { ...data, items: template[today] || [] }; } if (type === 'YOUTUBE') { data = { ...data, youtubeUrl: '' }; } data = { ...data, ...extraData }; const newWidget = { id, type, position, size, zIndex: maxZIndex + 1, data, isMinimized: false }; setWidgets(prev => [...prev, newWidget]); setMaxZIndex(prev => prev + 1); setSelectedId(id); };
 
       useEffect(() => {
         const handlePaste = (e) => {
@@ -3892,7 +4106,23 @@
         );
       };
 
-      const renderWidgetContent = (widget) => { const props = { widget, updateData: updateWidgetData, roster, onUpdateRoster: setRoster }; switch (widget.type) { case 'TIMER': return <TimerWidget {...props} />; case 'RANDOMIZER': return <RandomizerWidget {...props} />; case 'GROUP_MAKER': return <GroupMakerWidget {...props} />; case 'SEAT_PICKER': return <SeatPickerWidget {...props} />; case 'TEXT': return <TextWidget {...props} />; case 'WEBCAM': return <WebcamWidget {...props} />; case 'DICE': return <DiceWidget {...props} />; case 'TRAFFIC': return <TrafficLightWidget {...props} />; case 'QR': return <QRCodeWidget {...props} />; case 'VOTE': return <VoteWidget {...props} />; case 'WHITEBOARD': return <WhiteboardWidget {...props} />; case 'SCHEDULE': return <ScheduleWidget {...props} onOpenSettings={() => { setSettingsInitialTab('schedule'); setShowSettingsModal(true); }} />; case 'YOUTUBE': return <YouTubeWidget {...props} />; case 'CALENDAR': return <CalendarWidget {...props} />; default: return null; } };
+      const renderWidgetContent = (widget) => {
+        const props = {
+          widget: { ...widget, updateLayout: updateWidgetLayout }, // Pass updateLayout inside widget prop or separate? Let's attach to widget obj for convenience or pass separate. 
+          // Wait, previous code destructured `widget` in props. 
+          // Better to pass `updateLayout` as a separate prop.
+          updateData: updateWidgetData,
+          updateLayout: updateWidgetLayout, // NEW PROP
+          roster,
+          onUpdateRoster: setRoster
+        };
+        // Inject updateLayout into the widget object too for backward compat if I used it that way above? 
+        // In CreateGroups above I used `widget.updateLayout`. So I should modify `widget` prop.
+        const widgetWithLayout = { ...widget, updateLayout: updateWidgetLayout };
+        const enhancedProps = { ...props, widget: widgetWithLayout };
+
+        switch (widget.type) { case 'TIMER': return <TimerWidget {...enhancedProps} />; case 'RANDOMIZER': return <RandomizerWidget {...enhancedProps} />; case 'GROUP_MAKER': return <GroupMakerWidget {...enhancedProps} />; case 'SEAT_PICKER': return <SeatPickerWidget {...enhancedProps} />; case 'TEXT': return <TextWidget {...enhancedProps} />; case 'OVERLAY_TEXT': return <SimpleTextWidget {...enhancedProps} />; case 'WEBCAM': return <WebcamWidget {...enhancedProps} />; case 'DICE': return <DiceWidget {...enhancedProps} />; case 'TRAFFIC': return <TrafficLightWidget {...enhancedProps} />; case 'QR': return <QRCodeWidget {...enhancedProps} />; case 'VOTE': return <VoteWidget {...enhancedProps} />; case 'WHITEBOARD': return <WhiteboardWidget {...enhancedProps} />; case 'SCHEDULE': return <ScheduleWidget {...enhancedProps} selectedDate={selectedDate} scheduleTemplate={scheduleTemplate} setScheduleTemplate={setScheduleTemplate} onOpenSettings={() => { setSettingsInitialTab('schedule'); setShowSettingsModal(true); }} />; case 'YOUTUBE': return <YouTubeWidget {...enhancedProps} />; case 'CALENDAR': return <CalendarWidget {...enhancedProps} selectedDate={selectedDate} onSelectDate={setSelectedDate} />; default: return null; }
+      };
 
       return (
         <div className="w-screen h-screen overflow-hidden relative" style={{
@@ -3947,7 +4177,7 @@
             <ClockDisplay
               style={clockStyle}
               textColor={currentBg.textColor || 'text-slate-800'}
-              onSettingsClick={() => setShowSettingsModal(true)}
+              onSettingsClick={() => { setSettingsInitialTab('appearance'); setShowSettingsModal(true); }}
             />
             {(() => {
               // Don't show if disabled
@@ -3974,22 +4204,20 @@
             })()}
           </div>
 
-          {/* Top Right Controls */}
-          <div className="absolute top-8 right-8 z-50 flex gap-2">
-            <button onClick={handleUndo} disabled={history.length === 0} className="p-3 bg-white/80 backdrop-blur-md hover:bg-white text-slate-600 disabled:opacity-30 disabled:hover:bg-white/80 rounded-full shadow-lg border border-white/50 transition-all active:scale-95 group" title="Undo (Ctrl+Z)">
-              <Undo2 size={24} className="group-hover:text-blue-600" />
-            </button>
-          </div>
+
 
           {/* Widgets Area */}
           <div className="absolute inset-0 z-30 pointer-events-none">
             {/* Spotlight Overlay - inside widget container so only spotlighted widget appears above it */}
             {spotlightId && <div className="fixed inset-0 bg-black/80 cursor-pointer pointer-events-auto animate-in fade-in duration-300" style={{ zIndex: 9999, boxShadow: 'inset 0 0 200px 100px rgba(0,0,0,0.5)' }} onClick={() => setSpotlightId(null)}><div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/40" /></div>}
-            {widgets.map(w => (<DraggableResizable key={w.id} id={w.id} position={w.position} size={w.size} zIndex={w.zIndex} isSelected={selectedId === w.id} isMinimized={w.isMinimized} isSpotlighted={spotlightId === w.id} isGridEnabled={isGridEnabled} widgetType={w.type} onSelect={bringToFront} onUpdate={updateWidgetLayout} onRemove={removeWidget} onMinimizeToggle={toggleMinimize} onSpotlight={toggleSpotlight} onFontSizeChange={['WHITEBOARD', 'QR', 'WEBCAM', 'YOUTUBE', 'CALENDAR'].includes(w.type) ? undefined : (d) => updateWidgetData(w.id, { fontSize: Math.max(8, (w.data.fontSize || 16) + d) })}>{renderWidgetContent(w)}</DraggableResizable>))}
+            {widgets.map(w => (<DraggableResizable key={w.id} id={w.id} position={w.position} size={w.size} zIndex={w.zIndex} isSelected={selectedId === w.id} isMinimized={w.isMinimized} isSpotlighted={spotlightId === w.id} isGridEnabled={isGridEnabled} widgetType={w.type} onSelect={bringToFront} onUpdate={updateWidgetLayout} onRemove={removeWidget} onMinimizeToggle={toggleMinimize} onSpotlight={toggleSpotlight} chromeless={w.type === 'OVERLAY_TEXT'} onFontSizeChange={['OVERLAY_TEXT', 'WHITEBOARD', 'QR', 'WEBCAM', 'YOUTUBE', 'CALENDAR'].includes(w.type) ? undefined : (d) => updateWidgetData(w.id, { fontSize: Math.max(8, (w.data.fontSize || 16) + d) })}>{renderWidgetContent(w)}</DraggableResizable>))}
           </div>
 
           {/* Slide Controls - Refined Styles */}
           <div className="absolute bottom-6 right-8 z-50 flex items-center pointer-events-none">
+            <button onClick={handleUndo} disabled={history.length === 0} className="mr-3 pointer-events-auto p-2 bg-white/80 backdrop-blur-md hover:bg-white text-slate-600 disabled:opacity-30 disabled:hover:bg-white/80 rounded-full shadow-lg border border-white/50 transition-all active:scale-95 group" title="Undo (Ctrl+Z)">
+              <Undo2 size={20} className="group-hover:text-blue-600" />
+            </button>
             <div className="pointer-events-auto flex items-center gap-0.5 backdrop-blur-2xl rounded-full shadow-2xl p-0.5 ring-1 ring-white/50 relative">
               <div className="absolute inset-0 bg-white/20 rounded-full overflow-hidden -z-10 border border-white/40" />
               <button onClick={prevSlide} disabled={currentSlideIndex === 0} className="p-1.5 hover:bg-white/40 rounded-full text-gray-500 hover:text-blue-700 transition-all duration-200 disabled:opacity-20 group active:scale-95"><ChevronLeft size={20} /></button>
