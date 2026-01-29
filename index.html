@@ -352,7 +352,7 @@
       RANDOMIZER: { width: 250, height: 250 },
       GROUP_MAKER: { width: 900, height: 550 },
       SEAT_PICKER: { width: 900, height: 530 },
-      TEXT: { width: 340, height: 260 },
+      TEXT: { width: 600, height: 400 },
       WEBCAM: { width: 320, height: 240 },
       DICE: { width: 300, height: 320 },
       TRAFFIC: { width: 220, height: 360 },
@@ -363,7 +363,7 @@
       SCHEDULE: { width: 380, height: 500 },
       YOUTUBE: { width: 480, height: 360 },
       CALENDAR: { width: 300, height: 320 },
-      OVERLAY_TEXT: { width: 300, height: 80 }
+      OVERLAY_TEXT: { width: 500, height: 120 }
     };
 
     // --- COMPONENTS ---
@@ -694,7 +694,7 @@
 
           <div className="flex gap-3">
             <div className="h-32 overflow-y-auto custom-scrollbar w-12 text-center">
-              {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
+              {[7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6].map(h => (
                 <div key={h} onClick={() => handleHourChange(h)} className={`p-1 text-sm font-bold rounded cursor-pointer hover:bg-indigo-50 ${displayHours === h ? 'bg-indigo-100 text-indigo-600' : 'text-gray-600'}`}>
                   {h}
                 </div>
@@ -710,8 +710,8 @@
             </div>
 
             <div className="flex flex-col gap-1 justify-center border-l border-gray-100 pl-2">
-              <button onClick={() => !isPM && toggleAMPM()} className={`px-2 py-1 text-xs font-bold rounded ${!isPM ? 'bg-orange-100 text-orange-600' : 'text-gray-400 hover:bg-gray-50'}`}>AM</button>
-              <button onClick={() => isPM && toggleAMPM()} className={`px-2 py-1 text-xs font-bold rounded ${isPM ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-gray-50'}`}>PM</button>
+              <button onClick={() => isPM && toggleAMPM()} className={`px-2 py-1 text-xs font-bold rounded ${!isPM ? 'bg-orange-100 text-orange-600' : 'text-gray-400 hover:bg-gray-50'}`}>AM</button>
+              <button onClick={() => !isPM && toggleAMPM()} className={`px-2 py-1 text-xs font-bold rounded ${isPM ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-gray-50'}`}>PM</button>
               <div className="h-px bg-gray-200 my-1" />
               <button onClick={onClose} className="px-2 py-1 text-xs font-bold text-green-600 hover:bg-green-50 rounded">Done</button>
             </div>
@@ -847,10 +847,13 @@
         else if (rotatingDesk && isEditing) {
           e.preventDefault();
           const desk = desks.find(d => d.id === rotatingDesk);
+          const scale = fontSize / 16;
+          const deskW = (desk ? (desk.type === 'teacher' ? 154 : 110) : 110) * scale;
+          const deskH = (desk ? (desk.type === 'teacher' ? 80 : 60) : 60) * scale;
           if (desk && containerRef.current) {
             const rect = containerRef.current.getBoundingClientRect();
-            const deskCenterX = rect.left + desk.x + (desk.type === "teacher" ? 80 : 56);
-            const deskCenterY = rect.top + desk.y + (desk.type === "teacher" ? 40 : 32);
+            const deskCenterX = rect.left + desk.x + deskW / 2;
+            const deskCenterY = rect.top + desk.y + deskH / 2;
             let angle = Math.atan2(e.clientY - deskCenterY, e.clientX - deskCenterX) * (180 / Math.PI);
             if (snapToGrid > 0) angle = Math.round(angle / 15) * 15;
             updateData(widget.id, { desks: desks.map(d => { if (d.id === rotatingDesk) return { ...d, rotation: angle + 45 }; return d; }) });
@@ -862,10 +865,13 @@
         if (isSelecting && selectionBox) {
           // Commit selection
           const { x, y, w, h } = selectionBox;
+          const scale = fontSize / 16;
           const selected = desks.filter(d => {
+            const deskW = (d.type === 'teacher' ? 154 : 110) * scale;
+            const deskH = (d.type === 'teacher' ? 80 : 60) * scale;
             // Simple center point collision
-            const cx = d.x + (d.type === 'teacher' ? 40 : 28);
-            const cy = d.y + (d.type === 'teacher' ? 20 : 16);
+            const cx = d.x + (deskW / 2);
+            const cy = d.y + (deskH / 2);
             return cx >= x && cx <= x + w && cy >= y && cy <= y + h;
           }).map(d => d.id);
           setSelectedDeskIds(selected);
@@ -1016,7 +1022,10 @@
           <div ref={containerRef} className={`flex-1 relative overflow-hidden ${isEditing ? "bg-slate-100" : "bg-slate-50"}`} style={{ backgroundImage: isEditing ? "radial-gradient(#cbd5e1 1px, transparent 1px)" : "none", backgroundSize: `${Math.max(20, snapToGrid || 20)}px ${Math.max(20, snapToGrid || 20)}px` }} onMouseDown={handleBgMouseDown}>
             {desks.map(desk => {
               const isAbsent = desk.student && roster.find(s => s.name === desk.student && !s.active);
-              const styleClass = desk.type === "teacher" ? "bg-slate-800 border-slate-600 text-white shadow-lg w-28 h-14 rounded-md" : `${DESK_COLORS[desk.color || "blue"]} w-20 h-11 rounded-lg`;
+              const scale = fontSize / 16;
+              const deskW = (desk.type === 'teacher' ? 154 : 110) * scale;
+              const deskH = (desk.type === 'teacher' ? 80 : 60) * scale;
+              const styleClass = desk.type === "teacher" ? "bg-slate-800 border-slate-600 text-white shadow-lg rounded-md" : `${DESK_COLORS[desk.color || "blue"]} rounded-lg`;
               const isSelected = selectedDeskIds.includes(desk.id);
               return (<div
                 key={desk.id}
@@ -1026,7 +1035,7 @@
                 onDrop={(e) => handleStudentDrop(e, desk.id)}
                 onContextMenu={(e) => toggleAbsence(desk.student, e)}
                 className={`absolute shadow-sm border-2 flex items-center justify-center transition-shadow ${isEditing ? "cursor-move hover:shadow-md" : "cursor-pointer"} ${styleClass} ${isAbsent ? "opacity-60" : ""} ${isSelected ? "ring-2 ring-blue-500 ring-offset-2 z-10" : ""}`}
-                style={{ left: desk.x, top: desk.y, transform: `rotate(${desk.rotation || 0}deg)`, fontSize: (desk.type === 'teacher' ? 14 : fontSize) + 'px' }}
+                style={{ left: desk.x, top: desk.y, width: deskW, height: deskH, transform: `rotate(${desk.rotation || 0}deg)`, fontSize: (desk.type === 'teacher' ? 14 : fontSize) + 'px' }}
                 onMouseDown={(e) => handleMouseDown(e, desk.id)}
               >
                 {isAbsent && <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full z-30 shadow-sm pointer-events-none">OUT</div>}
@@ -2073,7 +2082,7 @@
       );
 
       const renderStandard = () => (
-        <div className="flex flex-col items-center gap-0 w-full h-full justify-center">
+        <div className="flex flex-col items-start gap-0 w-full h-full justify-center px-[5cqw]">
           <div className={`font-bold tracking-tight ${textColor} drop-shadow-md`} style={{ fontVariantNumeric: 'tabular-nums', lineHeight: 0.9, fontSize: 'min(22cqw, 55cqh)' }}>{timeString}</div>
           {showDate && <div className={`font-medium tracking-wide uppercase opacity-90 mt-[2cqh] ${textColor}`} style={{ fontSize: 'min(5cqw, 12cqh)' }}>{dateString}</div>}
         </div>
@@ -3421,11 +3430,13 @@
 
     const SCHEDULE_EMOJIS = ['📚', '🎨', '🏃', '🎵', '💻', '🥪', '📝', '🔬', '🗣️', '🛑', '🚌', '🏠', '📅', '⭐', '🔔'];
 
-    const ScheduleWidget = ({ widget, updateData, onOpenSettings, selectedDate, setSelectedDate, scheduleTemplate, setScheduleTemplate, scheduleOverrides, setScheduleOverrides }) => {
+    const ScheduleWidget = ({ widget, updateData, onOpenSettings, selectedDate, setSelectedDate, scheduleTemplate, setScheduleTemplate, scheduleOverrides, setScheduleOverrides, scheduleSettings, setScheduleSettings }) => {
       const { fontSize = 14 } = widget.data;
       const [dragIndex, setDragIndex] = useState(null);
       const [emojiPickerIndex, setEmojiPickerIndex] = useState(null);
       const [timePickerState, setTimePickerState] = useState({ index: null, triggerRef: null });
+      const [showCyclePicker, setShowCyclePicker] = useState(false);
+      const [revertConfirmOpen, setRevertConfirmOpen] = useState(false);
 
       const viewDate = selectedDate || new Date();
       // Helper for local YYYY-MM-DD
@@ -3435,24 +3446,67 @@
       };
 
       const dateKey = toLocalISOString(viewDate);
-      const dayName = DAYS_OF_WEEK[viewDate.getDay()];
+
+      // --- Rotating Schedule Logic ---
+      const scheduleMode = scheduleSettings?.mode || 'weekly';
+      const cycleLength = scheduleSettings?.cycleLength || 6;
+
+      const getCycleDay = (date) => {
+        if (scheduleMode !== 'rotating') return null;
+        const anchorStr = scheduleSettings?.anchorDate || new Date().toISOString().split('T')[0];
+        const anchorDay = scheduleSettings?.anchorDay || 1;
+
+        // Parse local YYYY-MM-DD to midnight
+        const [ay, am, ad] = anchorStr.split('-').map(Number);
+        const anchor = new Date(ay, am - 1, ad);
+        const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+        // Business Day Diff logic
+        let count = 0;
+        const d = new Date(anchor);
+        const sign = target > anchor ? 1 : -1;
+
+        // Prevent infinite loop safety
+        let loops = 0;
+        const maxLoops = 3650; // 10 years
+
+        while (d.getTime() !== target.getTime() && loops < maxLoops) {
+          d.setDate(d.getDate() + sign);
+          const day = d.getDay();
+          if (day !== 0 && day !== 6) count += sign;
+          loops++;
+        }
+
+        let val = (anchorDay - 1 + count) % cycleLength;
+        if (val < 0) val += cycleLength;
+        return val + 1;
+      };
+
+      // Determine Display Info
+      let templateKey = DAYS_OF_WEEK[viewDate.getDay()];
+      let displayDayName = templateKey;
+      let currentCycleDay = null;
+
+      if (scheduleMode === 'rotating') {
+        currentCycleDay = getCycleDay(viewDate);
+        templateKey = `Day ${currentCycleDay}`;
+        displayDayName = (scheduleSettings?.dayLabels?.[currentCycleDay - 1]) || `Day ${currentCycleDay}`;
+      }
 
       const hasOverride = scheduleOverrides && scheduleOverrides[dateKey] !== undefined;
-      const items = hasOverride ? scheduleOverrides[dateKey] : ((scheduleTemplate && scheduleTemplate[dayName]) ? scheduleTemplate[dayName] : []);
+      const items = hasOverride ? scheduleOverrides[dateKey] : ((scheduleTemplate && scheduleTemplate[templateKey]) ? scheduleTemplate[templateKey] : []);
 
       useEffect(() => {
-        const handleClickOutside = () => { setEmojiPickerIndex(null); setTimePickerState({ index: null, triggerRef: null }); };
-        if (emojiPickerIndex !== null || timePickerState.index !== null) { document.addEventListener('click', handleClickOutside); return () => document.removeEventListener('click', handleClickOutside); }
-      }, [emojiPickerIndex, timePickerState.index]);
+        const handleClickOutside = () => { setEmojiPickerIndex(null); setTimePickerState({ index: null, triggerRef: null }); setShowCyclePicker(false); };
+        if (emojiPickerIndex !== null || timePickerState.index !== null || showCyclePicker) { document.addEventListener('click', handleClickOutside); return () => document.removeEventListener('click', handleClickOutside); }
+      }, [emojiPickerIndex, timePickerState.index, showCyclePicker]);
 
       const now = new Date();
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
       const parseTimeToMinutes = (time) => { if (!time) return 0; const [h, m] = time.split(':').map(Number); return h * 60 + m; };
 
       const isCurrentItem = (item, index) => {
-        // Only show current indicator if viewing TODAY
         if (toLocalISOString(now) !== dateKey) return false;
-
         const itemMinutes = parseTimeToMinutes(item.time);
         const nextItem = items[index + 1];
         const nextMinutes = nextItem ? parseTimeToMinutes(nextItem.time) : 24 * 60;
@@ -3477,7 +3531,6 @@
       const changeDate = (delta) => {
         const d = new Date(viewDate);
         d.setDate(d.getDate() + delta);
-        // Skip weekends
         while (d.getDay() === 0 || d.getDay() === 6) {
           d.setDate(d.getDate() + (delta > 0 ? 1 : -1));
         }
@@ -3491,13 +3544,29 @@
         }
       };
 
+      const handleSetCycleDay = (dayNum) => {
+        if (!setScheduleSettings) return;
+        setScheduleSettings({
+          ...scheduleSettings,
+          anchorDate: toLocalISOString(viewDate),
+          anchorDay: dayNum
+        });
+        setShowCyclePicker(false);
+      };
+
       const revertToday = () => {
-        if (confirm(`Revert to the default ${dayName} schedule? This will delete your custom changes for ${dateKey}.`) && setScheduleOverrides) {
-          setScheduleOverrides(prev => {
-            const next = { ...prev };
-            delete next[dateKey];
-            return next;
-          });
+        if (revertConfirmOpen) {
+          if (setScheduleOverrides) {
+            setScheduleOverrides(prev => {
+              const next = { ...prev };
+              delete next[dateKey];
+              return next;
+            });
+          }
+          setRevertConfirmOpen(false);
+        } else {
+          setRevertConfirmOpen(true);
+          setTimeout(() => setRevertConfirmOpen(false), 3000);
         }
       };
 
@@ -3507,11 +3576,38 @@
             <div className="flex items-center gap-1">
               <button onClick={() => changeDate(-1)} className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-indigo-600"><ChevronLeft size={20} /></button>
               <div className="flex flex-col items-center leading-none relative group cursor-pointer px-1">
-                <span className="font-bold text-slate-800 text-sm">{dayName}</span>
-                <span className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider">{viewDate.toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                <span className="font-bold text-slate-800 text-sm whitespace-nowrap">
+                  {displayDayName}
+                  {scheduleMode === 'weekly' && <span className="text-slate-400 font-normal text-[10px] ml-1 uppercase">(Daily)</span>}
+                </span>
+
+                {/* Rotating Mode: Cycle Picker */}
+                {scheduleMode === 'rotating' && (
+                  <span onClick={(e) => { e.stopPropagation(); setShowCyclePicker(!showCyclePicker); }} className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider hover:bg-indigo-50 px-1 rounded cursor-pointer relative top-0.5">
+                    (Change Day)
+                  </span>
+                )}
+                {/* Weekly Mode: Date Only */}
+                {scheduleMode === 'weekly' && (
+                  <span className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider">{viewDate.toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                )}
+
                 <input type="date" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleDateChange} />
+
+                {/* Cycle Picker Dropdown */}
+                {showCyclePicker && (
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border rounded-lg shadow-xl z-50 w-32 max-h-48 overflow-y-auto custom-scrollbar flex flex-col p-1 animate-in fade-in zoom-in-95 duration-100" onClick={(e) => e.stopPropagation()}>
+                    <div className="text-[10px] text-center font-bold text-gray-400 uppercase py-1 border-b mb-1">Set Today As...</div>
+                    {Array.from({ length: cycleLength }, (_, i) => i + 1).map(num => (
+                      <button key={num} onClick={() => handleSetCycleDay(num)} className={`text-xs font-bold py-1.5 rounded hover:bg-slate-100 ${num === currentCycleDay ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600'}`}>
+                        {(scheduleSettings?.dayLabels?.[num - 1] || `Day ${num}`)}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <button onClick={() => changeDate(1)} className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-indigo-600"><ChevronRight size={20} /></button>
+
               <div className="relative ml-2">
                 <button className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 ring-1 ring-indigo-200 transition-colors shadow-sm"><Calendar size={14} /></button>
                 <input type="date" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleDateChange} />
@@ -3519,7 +3615,15 @@
             </div>
 
             <div className="flex gap-1">
-              {hasOverride && <button onClick={revertToday} className="p-1.5 text-orange-500 hover:bg-orange-50 rounded-lg transition-colors" title="Revert to Template"><RotateCcw size={16} /></button>}
+              {hasOverride && (
+                <button
+                  onClick={revertToday}
+                  className={`p-1.5 rounded-lg transition-all flex items-center gap-1 ${revertConfirmOpen ? 'bg-orange-500 text-white shadow-sm ring-2 ring-orange-200' : 'text-orange-500 hover:bg-orange-50'}`}
+                  title={revertConfirmOpen ? "Click to Confirm" : "Revert to Template"}
+                >
+                  {revertConfirmOpen ? <span className="text-[10px] font-bold px-1 whitespace-nowrap animate-in fade-in">Confirm Reset?</span> : <RotateCcw size={16} />}
+                </button>
+              )}
               <button onClick={addItem} className="p-1.5 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm" title="Add activity"><Plus size={16} /></button>
               <button onClick={onOpenSettings} className="p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded-lg transition-colors" title="Schedule settings"><Settings size={16} /></button>
             </div>
@@ -3529,7 +3633,7 @@
             {items.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center p-6 opacity-60">
                 <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4 text-slate-400"><Calendar size={32} /></div>
-                <p className="text-slate-500 text-sm font-medium mb-1">No plans for {dayName}</p>
+                <p className="text-slate-500 text-sm font-medium mb-1">No plans for {displayDayName}</p>
                 <p className="text-slate-400 text-xs mb-4">Add an activity just for today, or edit the template in settings.</p>
                 <button onClick={addItem} className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 shadow-md transition-transform active:scale-95 flex items-center gap-2"><Plus size={14} /> Add Activity</button>
               </div>
@@ -3537,52 +3641,20 @@
               items.map((item, index) => {
                 const isCurrent = isCurrentItem(item, index);
                 return (
-                  <div key={item.id} draggable onDragStart={() => handleDragStart(index)} onDragOver={handleDragOver} onDrop={() => handleDrop(index)} className={`relative group flex gap-3 p-3 rounded-xl border transition-all cursor-move w-full min-h-[4.5rem] shadow-sm ${isCurrent ? 'bg-white border-indigo-300 ring-2 ring-indigo-100' : 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-md'}`} style={{ zIndex: emojiPickerIndex === index ? 50 : 0 }}>
+                  <div key={item.id} onDragOver={handleDragOver} onDrop={() => handleDrop(index)} className={`relative group flex gap-3 p-3 rounded-xl border transition-all w-full min-h-[4.5rem] shadow-sm ${isCurrent ? 'bg-white border-indigo-300 ring-2 ring-indigo-100' : 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-md'}`} style={{ zIndex: emojiPickerIndex === index ? 50 : 0 }}>
+                    <div draggable onDragStart={() => handleDragStart(index)} className="absolute left-1 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing text-slate-300 hover:text-indigo-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"><GripVertical size={16} /></div>
                     {isCurrent && <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-8 bg-indigo-500 rounded-r-full" />}
-
-                    <div className="flex flex-col items-center shrink-0 w-[4.5rem] relative justify-center border-r border-slate-100 pr-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTimePickerState(timePickerState.index === index ? { index: null, triggerRef: null } : { index, triggerRef: { current: e.currentTarget } });
-                        }}
-                        className={`w-full text-sm font-bold px-2 py-1 rounded transition-colors ${isCurrent ? 'text-indigo-600 bg-indigo-50' : 'text-slate-600 bg-slate-50 group-hover:bg-slate-100'}`}
-                      >
-                        {(() => {
-                          const [h, m] = (item.time || '09:00').split(':');
-                          const hours = parseInt(h);
-                          const ampm = hours >= 12 ? 'PM' : 'AM';
-                          const displayH = hours % 12 || 12;
-                          return `${displayH}:${m}`;
-                        })()}
-                        <span className="text-[10px] font-medium text-slate-400 ml-0.5">{(() => {
-                          const h = parseInt((item.time || '09:00').split(':')[0]);
-                          return h >= 12 ? 'PM' : 'AM';
-                        })()}</span>
-                      </button>
-                      {timePickerState.index === index && (
-                        <TimePicker
-                          time={item.time || '09:00'}
-                          onChange={(t) => updateItem(index, 'time', t)}
-                          onClose={() => setTimePickerState({ index: null, triggerRef: null })}
-                          triggerRef={timePickerState.triggerRef}
-                        />
-                      )}
+                    <div className="flex flex-col items-center shrink-0 w-[4.5rem] relative justify-center border-r border-slate-100 pr-3 ml-4">
+                      <button onClick={(e) => { e.stopPropagation(); setTimePickerState(timePickerState.index === index ? { index: null, triggerRef: null } : { index, triggerRef: { current: e.currentTarget } }); }} className={`w-full text-sm font-bold px-2 py-1 rounded transition-colors ${isCurrent ? 'text-indigo-600 bg-indigo-50' : 'text-slate-600 bg-slate-50 group-hover:bg-slate-100'}`}>{(() => { const [h, m] = (item.time || '09:00').split(':'); const hours = parseInt(h); const displayH = hours % 12 || 12; return `${displayH}:${m}`; })()} <span className="text-[10px] font-medium text-slate-400 ml-0.5">{parseInt((item.time || '09:00').split(':')[0]) >= 12 ? 'PM' : 'AM'}</span></button>
+                      {timePickerState.index === index && <TimePicker time={item.time || '09:00'} onChange={(t) => updateItem(index, 'time', t)} onClose={() => setTimePickerState({ index: null, triggerRef: null })} triggerRef={timePickerState.triggerRef} />}
                     </div>
-
                     <div className="relative flex items-center justify-center shrink-0">
-                      <div className="text-2xl cursor-pointer hover:scale-110 transition-transform active:scale-95 p-1 rounded-lg hover:bg-indigo-50" onClick={(e) => { e.stopPropagation(); setEmojiPickerIndex(emojiPickerIndex === index ? null : index); }}>
-                        {item.emoji || '📚'}
-                      </div>
-                      {emojiPickerIndex === index && (
-                        <div className="absolute left-0 top-full mt-2 z-[100] bg-white rounded-xl shadow-2xl border border-slate-100 p-2 w-56 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100" onClick={(e) => e.stopPropagation()}>
-                          <div className="grid grid-cols-5 gap-1"> {SCHEDULE_EMOJIS.map((emoji, i) => (<button key={i} onClick={() => selectEmoji(index, emoji)} className={`text-2xl p-2 rounded-lg hover:bg-indigo-50 transition-colors ${item.emoji === emoji ? 'bg-indigo-100' : ''}`}>{emoji}</button>))} </div>
-                        </div>
-                      )}
+                      <div className="text-2xl cursor-pointer hover:scale-110 transition-transform active:scale-95 p-1 rounded-lg hover:bg-indigo-50" onClick={(e) => { e.stopPropagation(); setEmojiPickerIndex(emojiPickerIndex === index ? null : index); }}>{item.emoji || '📚'}</div>
+                      {emojiPickerIndex === index && <div className="absolute left-0 top-full mt-2 z-[100] bg-white rounded-xl shadow-2xl border border-slate-100 p-2 w-56 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100" onClick={(e) => e.stopPropagation()}><div className="grid grid-cols-5 gap-1"> {SCHEDULE_EMOJIS.map((emoji, i) => (<button key={i} onClick={() => selectEmoji(index, emoji)} className={`text-2xl p-2 rounded-lg hover:bg-indigo-50 transition-colors ${item.emoji === emoji ? 'bg-indigo-100' : ''}`}>{emoji}</button>))} </div></div>}
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                       <input type="text" value={item.title || ''} onChange={(e) => updateItem(index, 'title', e.target.value)} className="w-full font-bold text-slate-700 bg-transparent border-none outline-none truncate placeholder-slate-300" style={{ fontSize: fontSize + 'px' }} placeholder="Activity Name" />
-                      <input type="text" value={item.description || ''} onChange={(e) => updateItem(index, 'description', e.target.value)} className="w-full text-xs text-slate-400 bg-transparent border-none outline-none truncate placeholder-slate-200 font-medium" placeholder="Add details..." />
+                      <textarea value={item.description || ''} onChange={(e) => updateItem(index, 'description', e.target.value)} className="w-full text-xs text-slate-400 bg-transparent border-none outline-none resize-none placeholder-slate-200 font-medium overflow-hidden" placeholder="Add details..." rows={1} onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }} />
                     </div>
                     <button onClick={() => removeItem(index)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all self-center"><Trash2 size={16} /></button>
                   </div>
@@ -3989,7 +4061,10 @@
       );
     };
 
-    const SettingsModal = ({ onClose, onSave, downloadData, roster, allRosters, activeRosterId, onSetActiveRoster, onAddRoster, onDeleteRoster, onRenameRoster, fileInputRef, initialTab = 'appearance', isGridEnabled, onToggleGrid, currentBg, onBgSelect, myBackgrounds, onAddCustomBg, onDeleteCustomBg, clockStyle, setClockStyle, showClockDate, setShowClockDate, isClockGlassy, setIsClockGlassy, backupEnabled, setBackupEnabled, backupInterval, setBackupInterval, scheduleTemplate, setScheduleTemplate }) => {
+    const SettingsModal = ({ onClose, onSave, downloadData, roster, allRosters, activeRosterId, onSetActiveRoster, onAddRoster, onDeleteRoster, onRenameRoster, fileInputRef, initialTab = 'appearance', isGridEnabled, onToggleGrid, currentBg, onBgSelect, myBackgrounds, onAddCustomBg, onDeleteCustomBg, clockStyle, setClockStyle, showClockDate, setShowClockDate, isClockGlassy, setIsClockGlassy, backupEnabled, setBackupEnabled, backupInterval, setBackupInterval, scheduleTemplate, setScheduleTemplate, scheduleSettings, setScheduleSettings }) => {
+      const [realignDate, setRealignDate] = useState(new Date().toISOString().split('T')[0]);
+      const [realignTargetDay, setRealignTargetDay] = useState(1);
+      const [realignSuccess, setRealignSuccess] = useState(false);
       const [activeTab, setActiveTab] = useState(initialTab);
       const [mode, setMode] = useState('list');
 
@@ -4079,7 +4154,10 @@
       const [showRosterMenu, setShowRosterMenu] = useState(false); // Item 13 Custom Dropdown State
       const [settingsTimePickerState, setSettingsTimePickerState] = useState({ index: null, triggerRef: null });
 
-      const copyScheduleDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].filter(d => d !== selectedDay);
+      const copyScheduleDays = (scheduleSettings?.mode === 'rotating'
+        ? Array.from({ length: scheduleSettings.cycleLength || 6 }, (_, i) => `Day ${i + 1}`)
+        : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+      ).filter(d => d !== selectedDay);
 
       const handleBatchCopy = () => {
         if (copyTargetDays.length === 0) return;
@@ -4132,7 +4210,7 @@
       const tabs = [
         { id: 'appearance', label: 'Appearance', icon: <ImageIcon size={16} /> },
         { id: 'roster', label: 'Rosters', icon: <User size={16} /> },
-        { id: 'schedule', label: 'Schedule', icon: <Calendar size={16} /> },
+        { id: 'schedule', label: 'Template', icon: <Calendar size={16} /> },
         { id: 'data', label: 'Data', icon: <Download size={16} /> },
         { id: 'about', label: 'About', icon: <Info size={16} /> },
         { id: 'feedback', label: 'Feedback', icon: <Mail size={16} /> }
@@ -4358,51 +4436,115 @@
               {/* SCHEDULE TAB */}
               {activeTab === 'schedule' && (
                 <div className="p-4">
-                  <p className="text-gray-600 text-sm mb-4">Set up your weekly schedule template. Each day's activities will load automatically when you open the Schedule widget.</p>
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 mb-4">
+                    <h4 className="font-bold text-indigo-800 text-sm flex items-center gap-2"><Layout size={16} /> Schedule Settings</h4>
+                    <p className="text-indigo-600 text-xs mt-1">
+                      This plan repeats every cycle. To make changes for a specific date, edit directly in the Schedule widget on the main toolbar. When you backup your data, your schedule and events are saved as well.
+                    </p>
+                  </div>
+
+                  {/* Mode Toggle */}
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="flex bg-gray-100 p-1 rounded-lg">
+                      <button onClick={() => setScheduleSettings({ ...scheduleSettings, mode: 'weekly' })} className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${scheduleSettings?.mode !== 'rotating' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}>Weekly (M-F)</button>
+                      <button onClick={() => setScheduleSettings({ ...scheduleSettings, mode: 'rotating' })} className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${scheduleSettings?.mode === 'rotating' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}>Rotating Cycle</button>
+                    </div>
+                    {scheduleSettings?.mode === 'rotating' && (
+                      <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
+                        <span className="text-xs font-bold text-gray-500">Days in Cycle:</span>
+                        <input type="number" min="1" max="20" value={scheduleSettings.cycleLength || 6} onChange={(e) => setScheduleSettings({ ...scheduleSettings, cycleLength: Math.max(1, parseInt(e.target.value) || 1) })} className="w-14 p-1 border rounded text-center font-bold text-sm outline-none focus:border-indigo-500" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Realign Tool */}
+                  {scheduleSettings?.mode === 'rotating' && (
+                    <div className="flex items-center gap-2 mb-4 bg-indigo-50 p-2 rounded-lg border border-indigo-100 animate-in fade-in slide-in-from-top-2">
+                      <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider shrink-0 flex items-center gap-1"><RotateCcw size={12} /> Realign:</span>
+                      <input type="date" value={realignDate} onChange={e => setRealignDate(e.target.value)} className="text-xs p-1 rounded border border-indigo-200 outline-none text-slate-600 font-bold" />
+                      <span className="text-xs font-bold text-indigo-400">is</span>
+                      <select value={realignTargetDay} onChange={e => setRealignTargetDay(parseInt(e.target.value))} className="text-xs p-1 rounded border border-indigo-200 outline-none text-slate-600 font-bold w-24 cursor-pointer">
+                        {Array.from({ length: scheduleSettings.cycleLength || 6 }, (_, i) => i + 1).map(num => (
+                          <option key={num} value={num}>{(scheduleSettings.dayLabels?.[num - 1] || `Day ${num}`)}</option>
+                        ))}
+                      </select>
+                      <button onClick={() => {
+                        setScheduleSettings({ ...scheduleSettings, anchorDate: realignDate, anchorDay: realignTargetDay });
+                        setRealignSuccess(true);
+                        setTimeout(() => setRealignSuccess(false), 2000);
+                      }} className="ml-auto px-3 py-1 bg-indigo-600 text-white rounded font-bold text-xs hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-1">
+                        {realignSuccess ? <Check size={12} /> : null} Set
+                      </button>
+                    </div>
+                  )}
 
                   {/* Day Selector */}
-                  <div className="flex gap-2 mb-4 items-start">
-                    <div className="flex-1 flex gap-1 overflow-x-auto pb-2 custom-scrollbar">
-                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(day => (
-                        <button
-                          key={day}
-                          onClick={() => setSelectedDay(day)}
-                          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${selectedDay === day ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  <div className="flex flex-col gap-2 mb-4">
+                    <div className="flex gap-2 items-center">
+                      <div className="flex-1">
+                        <select
+                          value={selectedDay}
+                          onChange={(e) => setSelectedDay(e.target.value)}
+                          className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg font-bold text-slate-700 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all cursor-pointer hover:bg-white"
                         >
-                          {day.slice(0, 3)}
+                          {((scheduleSettings?.mode === 'rotating')
+                            ? Array.from({ length: scheduleSettings.cycleLength || 6 }, (_, i) => `Day ${i + 1}`)
+                            : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+                          ).map((day, i) => {
+                            const label = (scheduleSettings?.mode === 'rotating' && scheduleSettings?.dayLabels?.[i]) || day;
+                            // Add (Day X) suffix if label is custom and doesn't contain "Day"
+                            // Actually, clean label is best.
+                            return <option key={day} value={day}>{label}</option>;
+                          })}
+                        </select>
+                      </div>
+
+                      <div className="relative shrink-0">
+                        <button onClick={() => setShowCopyMenu(!showCopyMenu)} className="px-3 py-2.5 text-xs font-bold rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center gap-1 border border-blue-100 transition-colors">
+                          <Copy size={14} /> Copy
                         </button>
-                      ))}
-                    </div>
-                    <div className="relative shrink-0 pt-0.5">
-                      <button onClick={() => setShowCopyMenu(!showCopyMenu)} className="px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 flex items-center gap-1"><Copy size={12} /> Copy...</button>
-                      {showCopyMenu && (
-                        <div className="absolute top-full right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-50 w-48 overflow-hidden flex flex-col">
-                          <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase bg-gray-50 border-b">Copy {selectedDay} to:</div>
-                          <div className="max-h-48 overflow-y-auto custom-scrollbar p-1">
-                            {copyScheduleDays.map(d => (
-                              <label key={d} className="flex items-center gap-2 w-full text-left px-2 py-1.5 text-xs hover:bg-blue-50 text-gray-700 font-medium rounded cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={copyTargetDays.includes(d)}
-                                  onChange={() => toggleCopyDay(d)}
-                                  className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                />
-                                {d}
-                              </label>
-                            ))}
+                        {showCopyMenu && (
+                          <div className="absolute top-full right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-50 w-48 overflow-hidden flex flex-col">
+                            {/* Backdrop to close */}
+                            <div className="fixed inset-0 z-[-1]" onClick={() => setShowCopyMenu(false)}></div>
+                            <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase bg-gray-50 border-b">Copy {selectedDay} to:</div>
+                            <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                              {copyScheduleDays.map(d => {
+                                const dIdx = parseInt(d.split(' ')[1]) - 1;
+                                const dLabel = (scheduleSettings?.mode === 'rotating' && scheduleSettings?.dayLabels?.[dIdx]) || d;
+                                return (
+                                  <button key={d} onClick={() => { setCopyTargetDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]); }} className={`w-full text-left px-3 py-2 text-xs font-bold flex items-center justify-between hover:bg-gray-50 ${(copyTargetDays.includes(d)) ? 'text-blue-600 bg-blue-50' : 'text-slate-600'}`}>
+                                    <span className="truncate">{dLabel}</span>
+                                    {copyTargetDays.includes(d) && <Check size={12} />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <button onClick={() => { handleBatchCopy(); setShowCopyMenu(false); }} className="m-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded text-xs">Copy Now ({copyTargetDays.length})</button>
                           </div>
-                          <div className="p-2 border-t bg-gray-50">
-                            <button
-                              onClick={handleBatchCopy}
-                              disabled={copyTargetDays.length === 0}
-                              className="w-full bg-blue-600 text-white rounded py-1 text-xs font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              Copy ({copyTargetDays.length})
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
+
+                    {/* Rename Input for Rotating Mode */}
+                    {scheduleSettings?.mode === 'rotating' && selectedDay && (
+                      <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 bg-indigo-50/50 p-2 rounded-lg border border-indigo-100">
+                        <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider shrink-0 w-24">Label:</span>
+                        <input
+                          type="text"
+                          value={scheduleSettings.dayLabels?.[parseInt(selectedDay.split(' ')[1]) - 1] || ''}
+                          onChange={(e) => {
+                            const idx = parseInt(selectedDay.split(' ')[1]) - 1;
+                            setScheduleSettings({
+                              ...scheduleSettings,
+                              dayLabels: { ...scheduleSettings.dayLabels, [idx]: e.target.value }
+                            });
+                          }}
+                          className="flex-1 text-sm font-bold text-slate-700 bg-white border border-indigo-100 rounded px-2 py-1 outline-none focus:border-indigo-400 placeholder-indigo-200"
+                          placeholder={`Hint: "Week 1: Mon"`}
+                        />
+                      </div>
+                    )}
                   </div>
                   {copyStatus && <span className="text-xs text-green-600 font-bold block mb-2 animate-pulse">{copyStatus}</span>}
 
@@ -4649,6 +4791,11 @@
 
 
 
+    const getScheduleSettings = () => {
+      try { return JSON.parse(localStorage.getItem('homeroom_schedule_settings')) || { mode: 'weekly', cycleLength: 6, anchorDate: new Date().toISOString().split('T')[0], anchorDay: 1 }; }
+      catch { return { mode: 'weekly', cycleLength: 6, anchorDate: new Date().toISOString().split('T')[0], anchorDay: 1 }; }
+    };
+
     const CalendarWidget = ({ widget, updateData, selectedDate, onSelectDate, isGlassy }) => {
       const { width, height } = widget.size;
       const [viewDate, setViewDate] = useState(new Date());
@@ -4786,7 +4933,7 @@
           const defaultClock = {
             id: 'default-clock',
             type: 'CLOCK',
-            position: { x: (window.innerWidth / 2) - (625 / 2), y: (window.innerHeight / 2) - (275 / 2) }, // Centered, 25% larger dimensions
+            position: { x: 50, y: 50 }, // Left aligned
             size: { width: 625, height: 275 }, // 500 * 1.25, 220 * 1.25
             zIndex: 1,
             data: { fontSize: 16, style: 'standard', isGlassy: 'clear' },
@@ -5039,8 +5186,10 @@
       const [selectedDate, setSelectedDate] = useState(new Date());
       const [scheduleTemplate, setScheduleTemplate] = useState(getScheduleTemplate());
       const [scheduleOverrides, setScheduleOverrides] = useState(getScheduleOverrides());
+      const [scheduleSettings, setScheduleSettings] = useState(getScheduleSettings());
       useEffect(() => saveScheduleTemplate(scheduleTemplate), [scheduleTemplate]);
       useEffect(() => saveScheduleOverrides(scheduleOverrides), [scheduleOverrides]);
+      useEffect(() => localStorage.setItem('homeroom_schedule_settings', JSON.stringify(scheduleSettings)), [scheduleSettings]);
 
       // New Background State
       const [background, setBackground] = useState(getBackground());
@@ -5087,6 +5236,7 @@
           activeRosterId,
           scheduleTemplate: getScheduleTemplate(), // Weekly schedule
           scheduleOverrides: getScheduleOverrides(), // Specific day overrides
+          scheduleSettings: getScheduleSettings(), // Rotating cycle settings & labels
           dock: getDockOrder(),
           widgets: slides, // Includes widget data (seating positions, randomizer picks, whiteboard lines, etc.)
           background,
@@ -5141,6 +5291,10 @@
               setScheduleOverrides(d.scheduleOverrides);
               saveScheduleOverrides(d.scheduleOverrides);
             }
+            if (d.scheduleSettings) {
+              setScheduleSettings(d.scheduleSettings);
+              localStorage.setItem('homeroom_schedule_settings', JSON.stringify(d.scheduleSettings));
+            }
             // Restore other settings
             if (d.dock) saveDockOrder(d.dock);
             if (d.background) saveBackground(d.background);
@@ -5185,7 +5339,25 @@
       };
 
       // --- WIDGET MANAGEMENT ---
-      const addWidget = (type, extraData = {}) => { addToHistory(); const id = Date.now().toString(); const size = WIDGET_SIZES[type]; let startY = (window.innerHeight / 2) - (size.height / 2) + (Math.random() * 40 - 20); if (type === 'GROUP_MAKER') startY -= 100; if (type === 'SCHEDULE') startY -= 60; if (type === 'SEAT_PICKER') startY = 30; let startX = (window.innerWidth / 2) - (size.width / 2) + (Math.random() * 40 - 20); if (type === 'SEAT_PICKER') startX += 60; const position = { x: startX, y: startY }; let data = { fontSize: 16 }; if (type === 'TIMER') data = { ...data, timeLeft: 120, isRunning: false, mode: 'visual' }; if (type === 'RANDOMIZER') data = { ...data, students: getInitialStudents(), currentName: null, isAnimating: false, pickedStudents: [] }; if (type === 'GROUP_MAKER') data = { ...data, students: getInitialStudents(), groupCount: 4, groups: [] }; if (type === 'SEAT_PICKER') { const savedDesks = getSeatLayout(); if (savedDesks && savedDesks.length > 0) { data = { ...data, desks: savedDesks, isEditing: false }; } else { const initialStudents = getInitialStudents(); const initialDesks = initialStudents.slice(0, 8).map((s, i) => ({ id: `desk-${i}`, x: 50 + (i % 4) * 120, y: 50 + Math.floor(i / 4) * 100, student: s.name, color: 'blue', type: 'student', rotation: 0 })); data = { ...data, desks: initialDesks, isEditing: false }; } } if (type === 'TEXT') data = { ...data, mode: 'text', content: '', items: [] }; if (type === 'OVERLAY_TEXT') data = { ...data, content: '', isGlassy: false }; if (type === 'WEBCAM') data = { ...data, isMirrored: true, isActive: true }; if (type === 'DICE') data = { ...data, sides: 6, diceCount: 1, results: [1], isRolling: false }; if (type === 'TRAFFIC') data = { ...data, activeLight: null }; if (type === 'QR') data = { ...data, url: '' }; if (type === 'VOTE') data = { ...data, question: 'Class Poll', options: [{ id: 1, text: 'Yes', count: 0 }, { id: 2, text: 'No', count: 0 }] }; if (type === 'DRAWING') data = { ...data, canvasData: null, color: '#000000', brushSize: 5, tool: 'pen', initialImage: null, pastedImage: null }; if (type === 'SCHEDULE') { const template = getScheduleTemplate(); const today = DAYS_OF_WEEK[new Date().getDay()]; data = { ...data, items: template[today] || [] }; } if (type === 'YOUTUBE') { data = { ...data, youtubeUrl: '' }; } if (type === 'CLOCK') { data = { ...data, style: 'standard', isGlassy: 'clear' }; } if (type === 'CALENDAR') { data = { ...data, isGlassy: true }; } data = { ...data, ...extraData }; const newWidget = { id, type, position, size, zIndex: maxZIndex + 1, data, isMinimized: false }; setWidgets(prev => [...prev, newWidget]); setMaxZIndex(prev => prev + 1); setSelectedId(id); };
+      const addWidget = (type, extraData = {}) => {
+        addToHistory(); const id = Date.now().toString(); const size = WIDGET_SIZES[type]; let startY = (window.innerHeight / 2) - (size.height / 2) + (Math.random() * 40 - 20); if (type === 'GROUP_MAKER') startY -= 100; if (type === 'SCHEDULE') startY -= 60; if (type === 'SEAT_PICKER') startY = 30; let startX = (window.innerWidth / 2) - (size.width / 2) + (Math.random() * 40 - 20); if (type === 'SEAT_PICKER') startX += 60; const position = { x: startX, y: startY }; let data = { fontSize: 36 }; if (type === 'TIMER') data = { ...data, timeLeft: 120, isRunning: false, mode: 'visual' }; if (type === 'RANDOMIZER') data = { ...data, students: getInitialStudents(), currentName: null, isAnimating: false, pickedStudents: [] }; if (type === 'GROUP_MAKER') data = { ...data, students: getInitialStudents(), groupCount: 4, groups: [] };
+        if (type === 'SEAT_PICKER') {
+          const existing = (slides[currentSlideIndex] || []).find(w => w.type === 'SEAT_PICKER');
+          if (existing) {
+            data = { ...existing.data, isEditing: false };
+          } else {
+            const savedDesks = getSeatLayout();
+            if (savedDesks && savedDesks.length > 0) {
+              data = { ...data, desks: savedDesks, isEditing: false };
+            } else {
+              const initialStudents = getInitialStudents();
+              const initialDesks = initialStudents.slice(0, 8).map((s, i) => ({ id: `desk-${i}`, x: 50 + (i % 4) * 150, y: 50 + Math.floor(i / 4) * 120, student: s.name, color: 'blue', type: 'student', rotation: 0 }));
+              data = { ...data, desks: initialDesks, isEditing: false };
+            }
+          }
+        }
+        if (type === 'TEXT') data = { ...data, mode: 'text', content: '', items: [] }; if (type === 'OVERLAY_TEXT') data = { ...data, content: '', isGlassy: false }; if (type === 'WEBCAM') data = { ...data, isMirrored: true, isActive: true }; if (type === 'DICE') data = { ...data, sides: 6, diceCount: 1, results: [1], isRolling: false }; if (type === 'TRAFFIC') data = { ...data, activeLight: null }; if (type === 'QR') data = { ...data, url: '' }; if (type === 'VOTE') data = { ...data, question: 'Class Poll', options: [{ id: 1, text: 'Yes', count: 0 }, { id: 2, text: 'No', count: 0 }] }; if (type === 'DRAWING') data = { ...data, canvasData: null, color: '#000000', brushSize: 5, tool: 'pen', initialImage: null, pastedImage: null }; if (type === 'SCHEDULE') { const template = getScheduleTemplate(); const today = DAYS_OF_WEEK[new Date().getDay()]; data = { ...data, items: template[today] || [] }; } if (type === 'YOUTUBE') { data = { ...data, youtubeUrl: '' }; } if (type === 'CLOCK') { data = { ...data, style: 'standard', isGlassy: 'clear' }; } if (type === 'CALENDAR') { data = { ...data, isGlassy: true }; } data = { ...data, ...extraData }; const newWidget = { id, type, position, size, zIndex: maxZIndex + 1, data, isMinimized: false }; setWidgets(prev => [...prev, newWidget]); setMaxZIndex(prev => prev + 1); setSelectedId(id);
+      };
       // Paste Listener
       useEffect(() => {
         const handlePaste = (e) => {
@@ -5415,7 +5587,7 @@
           case 'QR': return <QRCodeWidget {...props} />;
           case 'VOTE': return <VoteWidget {...props} />;
           case 'DRAWING': return <DrawingWidget {...props} />;
-          case 'SCHEDULE': return <ScheduleWidget {...props} selectedDate={selectedDate} setSelectedDate={setSelectedDate} scheduleTemplate={scheduleTemplate} setScheduleTemplate={setScheduleTemplate} scheduleOverrides={scheduleOverrides} setScheduleOverrides={setScheduleOverrides} onOpenSettings={() => { setSettingsInitialTab('schedule'); setShowSettingsModal(true); }} />;
+          case 'SCHEDULE': return <ScheduleWidget {...props} selectedDate={selectedDate} setSelectedDate={setSelectedDate} scheduleTemplate={scheduleTemplate} setScheduleTemplate={setScheduleTemplate} scheduleOverrides={scheduleOverrides} setScheduleOverrides={setScheduleOverrides} scheduleSettings={scheduleSettings} setScheduleSettings={setScheduleSettings} onOpenSettings={() => { setSettingsInitialTab('schedule'); setShowSettingsModal(true); }} />;
           case 'YOUTUBE': return <YouTubeWidget {...props} />;
           case 'CALENDAR': return <CalendarWidget {...props} selectedDate={selectedDate} onSelectDate={setSelectedDate} isGlassy={props.extraProps.isGlassy} />;
           case 'CLOCK': return <ClockWidget {...props} isGlassy={props.extraProps.isGlassy} />;
@@ -5462,6 +5634,8 @@
             setBackupInterval={setBackupInterval}
             scheduleTemplate={scheduleTemplate}
             setScheduleTemplate={setScheduleTemplate}
+            scheduleSettings={scheduleSettings}
+            setScheduleSettings={setScheduleSettings}
             widgetList={widgets}  // Passing widgets for Data tab serialization if needed
             clockStyle={editingWidgetId ? (widgets.find(w => w.id === editingWidgetId)?.data?.style || 'standard') : clockStyle}
             setClockStyle={(newStyle) => {
